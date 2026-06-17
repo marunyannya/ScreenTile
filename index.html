@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TFabTile 自作クローン (オンデマンド・プル型 V6.1)</title>
+  <title>TFabTile 自作クローン (オンデマンド・プル型 V6.2)</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
@@ -36,13 +36,13 @@
         </div>
         <div>
           <h1 class="text-xl font-bold tracking-tight text-slate-900">On-Demand TFabTile</h1>
-          <p class="text-xs text-slate-500">教員リクエスト駆動・超低燃費モデル (V6.1)</p>
+          <p class="text-xs text-slate-500">教員リクエスト駆動・超低燃費モデル (V6.2 Flat)</p>
         </div>
       </div>
       <div class="flex items-center gap-3">
         <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
           <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
-          リクエスト待機システム稼働中
+          安全なフラット通信構成
         </span>
       </div>
     </div>
@@ -61,7 +61,7 @@
       <div id="role-selection" class="hidden max-w-2xl mx-auto py-12">
         <div class="text-center mb-10">
           <h2 class="text-3xl font-extrabold text-slate-900 mb-2">どちらで利用しますか？</h2>
-          <p class="text-slate-500">V6.1では教員が「更新」を押した時・接続時・切断時のみ画像を通信し、Firebaseの無料枠消費を最小限に抑えます。</p>
+          <p class="text-slate-500">V6.2ではFirebaseのルール制限をクリアしたフラットデータ構造で、学生接続の安定性を向上しました。</p>
         </div>
 
         <div class="grid md:grid-cols-2 gap-6">
@@ -107,7 +107,7 @@
           <div>
             <div class="flex items-center gap-2 text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-1">
               <span class="w-2 h-2 rounded-full bg-indigo-600"></span>
-              Teacher Panel (V6.1 On-Demand)
+              Teacher Panel (V6.2 On-Demand)
             </div>
             <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <h2 class="text-2xl font-bold text-slate-900">オンデマンド画面監視</h2>
@@ -211,7 +211,7 @@
                 低燃費オンデマンド待機中
               </h4>
               <p class="text-[11px] text-indigo-700 leading-relaxed font-medium">
-                V6.1システムは余分な通信を行いません。<strong>画面共有を開始した「接続時」、共有を止める「切断時」、そして「教員から要求が届いた瞬間」のみ</strong>画面キャプチャを撮影して安全に送信します。
+                余分な定期通信は行いません。<strong>画面共有を開始した「接続時」、共有を止める「切断時」、そして「教員から要求が届いた瞬間」のみ</strong>画面キャプチャを撮影して安全に送信します。
               </p>
             </div>
 
@@ -284,7 +284,7 @@
 
   <footer class="bg-white border-t border-slate-100 py-6 mt-12 text-center text-xs text-slate-400">
     <div class="max-w-7xl mx-auto px-4">
-      <p>&copy; 2026 Eco TFabTile On-Demand System (V6.1)</p>
+      <p>&copy; 2026 Eco TFabTile On-Demand System (V6.2 Flat)</p>
     </div>
   </footer>
 
@@ -380,23 +380,27 @@
       await setDoc(roomRef, {
         createdAt: new Date().toISOString(),
         hostId: currentUser.uid,
-        status: 'active',
-        requestTriggerGlobal: "" // 全員一斉要求のためのトリガー
+        status: 'active'
       }, { merge: true });
     }
 
     let unsubscribeStudents = null;
     let localStudentsData = []; // 現在の全生徒データをキャッシュ
 
+    // 授業に参加している学生のリアルタイム監視 (Rule 1 & Rule 2対応フラット監視)
     function startListeningToStudents(roomId) {
       if (!currentUser) return;
       
-      const studentsCollRef = collection(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId, 'students');
+      const studentsCollRef = collection(db, 'artifacts', appId, 'public', 'data', 'students');
       
       unsubscribeStudents = onSnapshot(studentsCollRef, (snapshot) => {
         const students = [];
         snapshot.forEach((doc) => {
-          students.push({ id: doc.id, ...doc.data() });
+          const data = doc.data();
+          // メモリ内で該当するルームの学生だけにフィルタリング (Rule 2 遵守)
+          if (data.roomId === roomId) {
+            students.push({ id: doc.id, ...data });
+          }
         });
         
         localStudentsData = students;
@@ -409,7 +413,7 @@
           }
         }
       }, (error) => {
-        console.error("Firestore Listen Error: ", error);
+        console.error("Firestore List error:", error);
       });
     }
 
@@ -425,9 +429,9 @@
       try {
         const newToken = "REQ-" + Date.now();
         
-        // トラフィックを抑えつつ、全学生のドキュメントにリクエストトークンを仕込みます。
+        // メモリ内で一致したすべての学生のドキュメントを更新
         for (const student of localStudentsData) {
-          const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId, 'students', student.id);
+          const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', student.id);
           await updateDoc(studentDocRef, {
             requestTrigger: newToken,
             requestTime: new Date().toISOString()
@@ -456,7 +460,7 @@
 
       try {
         const newToken = "REQ-SINGLE-" + Date.now();
-        const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId, 'students', studentIdToReq);
+        const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentIdToReq);
         
         await updateDoc(studentDocRef, {
           requestTrigger: newToken,
@@ -468,7 +472,7 @@
       } finally {
         setTimeout(() => {
           if (modalOverlay) modalOverlay.classList.add('hidden');
-        }, 1500);
+        }, 1200);
       }
     }
 
@@ -497,10 +501,9 @@
         tile.className = 'student-tile bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition duration-200 flex flex-col cursor-pointer';
         tile.onclick = () => zoomStudentTile(student);
 
-        // 撮影要求中かつ画像が来ていない場合（切断/遅延検知）
         const reqTime = student.requestTime ? new Date(student.requestTime) : null;
         const updTime = student.updatedAt ? new Date(student.updatedAt) : null;
-        const isWaitingResponse = reqTime && (!updTime || updTime < reqTime) && (now - reqTime > 6000);
+        const isWaitingResponse = reqTime && (!updTime || updTime < reqTime) && (now - reqTime < 8000);
 
         const lastUpdatedText = getRelativeTime(student.updatedAt);
         const hasImage = student.screenImage && student.screenImage.trim() !== "";
@@ -517,7 +520,6 @@
                </div>`
             }
 
-            <!-- ホバー時のみ現れる個別撮影取得ショートカット -->
             <div class="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition duration-150 flex items-center justify-center p-2">
               <button onclick="event.stopPropagation(); requestCaptureSingle('${student.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-xl text-xs flex items-center gap-1.5 shadow-lg transform translate-y-2 group-hover:translate-y-0 transition duration-200">
                 <i data-lucide="camera" class="w-3.5 h-3.5"></i>
@@ -525,7 +527,6 @@
               </button>
             </div>
 
-            <!-- 状態バッジ -->
             ${isWaitingResponse ? `
               <div class="absolute top-2 left-2 bg-amber-500 text-slate-900 text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 shadow-sm">
                 <i data-lucide="clock" class="w-2.5 h-2.5"></i>
@@ -599,60 +600,74 @@
       }, 200);
     };
 
-    // --- 学生：ルームに参加 ---
+    // --- 学生：ルームに参加 (フラット構造への登録 & エラーハンドリング強化) ---
     window.joinRoom = async function() {
-      const nameInput = document.getElementById('student-name-input').value.trim();
-      const roomInput = document.getElementById('student-room-input').value.trim();
+      try {
+        const nameInput = document.getElementById('student-name-input').value.trim();
+        const roomInput = document.getElementById('student-room-input').value.trim();
 
-      if (!nameInput) {
-        showCustomAlert("あなたの氏名を入力してください。");
-        return;
+        if (!nameInput) {
+          showCustomAlert("あなたの氏名を入力してください。");
+          return;
+        }
+        if (!roomInput || roomInput.length !== 6 || isNaN(roomInput)) {
+          showCustomAlert("正しい6桁のルームIDを入力してください。");
+          return;
+        }
+
+        if (!currentUser) {
+          showCustomAlert("認証の準備がまだできていません。数秒後に再度お試しください。");
+          return;
+        }
+
+        currentRoomId = roomInput;
+        studentId = currentUser.uid; 
+
+        // 1. ルームが存在するか検証
+        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
+        const roomDoc = await getDoc(roomRef);
+
+        if (!roomDoc.exists()) {
+          showCustomAlert("指定されたルームIDが存在しないか、すでに終了しています。");
+          return;
+        }
+
+        // 2. フォームから共有コントロール画面へ遷移
+        document.getElementById('student-join-panel').classList.add('hidden');
+        
+        const activePanel = document.getElementById('student-active-panel');
+        activePanel.classList.remove('hidden');
+        document.getElementById('active-student-display-name').innerText = nameInput;
+        document.getElementById('active-room-display-id').innerText = currentRoomId;
+
+        // 3. フラットな 'students' コレクションに参加情報を書き込む (Rule 1 準拠)
+        const myDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
+        
+        await setDoc(myDocRef, {
+          roomId: currentRoomId,
+          name: nameInput,
+          joinedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          requestTrigger: "",
+          screenImage: ""
+        }, { merge: true });
+
+        document.getElementById('sharing-status-dot').className = "w-2.5 h-2.5 rounded-full bg-slate-400";
+        
+        // 4. 学生側のリスナー：先生から撮影リクエストが届いたか監視する
+        listenForTeacherRequests();
+
+        lucide.createIcons();
+      } catch (error) {
+        console.error("ルーム参加中に致命的なエラーが発生しました:", error);
+        showCustomAlert("通信エラーにより参加できませんでした。ルームIDが合っているか確認し、再試行してください。(" + error.message + ")");
       }
-      if (!roomInput || roomInput.length !== 6 || isNaN(roomInput)) {
-        showCustomAlert("正しい6桁のルームIDを入力してください。");
-        return;
-      }
-
-      currentRoomId = roomInput;
-      studentId = currentUser.uid; 
-
-      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
-      const roomDoc = await getDoc(roomRef);
-
-      if (!roomDoc.exists()) {
-        showCustomAlert("指定されたルームIDが存在しないか、すでに終了しています。");
-        return;
-      }
-
-      document.getElementById('student-join-panel').classList.add('hidden');
-      
-      const activePanel = document.getElementById('student-active-panel');
-      activePanel.classList.remove('hidden');
-      document.getElementById('active-student-display-name').innerText = nameInput;
-      document.getElementById('active-room-display-id').innerText = currentRoomId;
-
-      const myDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId, 'students', studentId);
-      
-      await setDoc(myDocRef, {
-        name: nameInput,
-        joinedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        requestTrigger: "",
-        screenImage: ""
-      }, { merge: true });
-
-      document.getElementById('sharing-status-dot').className = "w-2.5 h-2.5 rounded-full bg-slate-400";
-      
-      // 学生側のリスナー：先生から撮影リクエストが届いたか監視する
-      listenForTeacherRequests();
-
-      lucide.createIcons();
     };
 
     // 教員からの撮影要求を検知する
     function listenForTeacherRequests() {
       if (!currentUser || !currentRoomId || !studentId) return;
-      const myDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId, 'students', studentId);
+      const myDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
 
       onSnapshot(myDocRef, (docSnap) => {
         if (!docSnap.exists()) return;
@@ -704,7 +719,7 @@
 
       } catch (error) {
         console.error("画面共有の開始失敗:", error);
-        showCustomAlert("画面共有を開始できませんでした。ブラウザの許可を確認してください。");
+        showCustomAlert("画面共有を開始できませんでした。ブラウザの共有許可ダイアログで『共有』を選択してください。");
       }
       lucide.createIcons();
     };
@@ -729,13 +744,17 @@
       document.getElementById('sending-indicator').classList.add('opacity-0');
       document.getElementById('sharing-status-dot').className = "w-2.5 h-2.5 rounded-full bg-slate-400";
 
-      // ② 切断時：画像をクリアしてFirestoreを更新
+      // ② 切断時：画像フィールドのみをリセット
       if (currentUser && currentRoomId && studentId) {
-        const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId, 'students', studentId);
-        await updateDoc(studentDocRef, {
-          screenImage: "",
-          updatedAt: new Date().toISOString()
-        });
+        try {
+          const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
+          await updateDoc(studentDocRef, {
+            screenImage: "",
+            updatedAt: new Date().toISOString()
+          });
+        } catch (err) {
+          console.error("切断時リセットエラー:", err);
+        }
       }
 
       lucide.createIcons();
@@ -750,7 +769,6 @@
       const indicatorText = document.getElementById('indicator-text');
 
       if (!localStream) {
-        // 共有開始していない場合は何もしない
         return;
       }
 
@@ -768,12 +786,11 @@
       try {
         if (video.readyState >= 2) {
           context.drawImage(video, 0, 0, targetWidth, targetHeight);
-          const base64Image = canvas.toDataURL('image/jpeg', 0.35); // 画質落として超高速軽量化
+          const base64Image = canvas.toDataURL('image/jpeg', 0.35); // 画質を適度に落としたJPEG変換
 
           previewImg.src = base64Image;
           previewImg.classList.remove('hidden');
 
-          // インジケーター表示
           if (indicatorText) indicatorText.innerText = statusMessage;
           indicator.className = "absolute top-3 right-3 bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-full flex items-center gap-1.5 opacity-100";
           setTimeout(() => {
@@ -781,14 +798,14 @@
           }, 2500);
 
           // Firestoreに画像を1枚だけアップロード
-          const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId, 'students', studentId);
+          const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
           await updateDoc(studentDocRef, {
             screenImage: base64Image,
             updatedAt: new Date().toISOString()
           });
         }
       } catch (err) {
-        console.error("オンデマンドキャプチャ送信エラー:", err);
+        console.error("キャプチャ送信エラー:", err);
       }
     }
 
@@ -798,9 +815,12 @@
         localStream.getTracks().forEach(track => track.stop());
       }
       if (currentRoomId && studentId) {
-        const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId, 'students', studentId);
-        // ドキュメントそのものを削除することで切断扱いにする
-        await deleteDoc(studentDocRef);
+        try {
+          const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
+          await deleteDoc(studentDocRef);
+        } catch (err) {
+          console.error("退出時削除エラー:", err);
+        }
       }
       location.reload();
     };
