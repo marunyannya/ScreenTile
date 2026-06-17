@@ -291,8 +291,9 @@
   <!-- Firebase SDK Modules -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
     let firebaseConfig = {};
     const isEnvConfigAvailable = typeof __firebase_config !== 'undefined' && __firebase_config;
@@ -324,6 +325,9 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
+    const storage = getStorage(app);
+    const googleProvider = new GoogleAuthProvider();
+    googleProvider.setCustomParameters({ prompt: 'select_account' });
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'tfabtile-clone';
 
     let currentUser = null;
@@ -335,45 +339,67 @@
     let lastAllRequestToken = ""; // 学生側で前回処理した全体要求トークン
     let lastSingleRequestToken = ""; // 学生側で前回処理した個別要求トークン
 
-    const initAuth = async () => {
-      try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth);
-        }
-      } catch (error) {
-        console.error("Auth Error", error);
-      }
-    };
-
-    initAuth();
-
     onAuthStateChanged(auth, (user) => {
-      if (user) {
-        currentUser = user;
+      currentUser = user;
+      if (!myRole) {
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('role-selection').classList.remove('hidden');
         lucide.createIcons();
       }
     });
 
-    window.selectRole = async function(role) {
-      myRole = role;
-      document.getElementById('role-selection').classList.add('hidden');
+    async function ensureTeacherAuth() {
+      const isGoogleUser = currentUser && currentUser.providerData.some((provider) => provider.providerId === 'google.com');
+      if (isGoogleUser) return currentUser;
 
-      if (role === 'teacher') {
-        document.getElementById('teacher-view').classList.remove('hidden');
-        currentRoomId = Math.floor(100000 + Math.random() * 900000).toString();
-        document.getElementById('teacher-room-id').innerText = currentRoomId;
-        
-        await initializeRoomOnDb(currentRoomId);
-        startListeningToRoom(currentRoomId); // 自分が作成したルームの合図（フラグ）情報を監視
-        startListeningToStudents(currentRoomId);
-      } else {
-        document.getElementById('student-view').classList.remove('hidden');
+      if (currentUser && currentUser.isAnonymous) {
+        await signOut(auth);
       }
-      lucide.createIcons();
+
+      const result = await signInWithPopup(auth, googleProvider);
+      return result.user;
+    }
+
+    async function ensureStudentAuth() {
+      if (currentUser && currentUser.isAnonymous) return currentUser;
+
+      if (currentUser && !currentUser.isAnonymous) {
+        await signOut(auth);
+      }
+
+      const result = await signInAnonymously(auth);
+      return result.user;
+    }
+
+    window.selectRole = async function(role) {
+      try {
+        myRole = role;
+        document.getElementById('role-selection').classList.add('hidden');
+        document.getElementById('loading').classList.remove('hidden');
+
+        if (role === 'teacher') {
+          currentUser = await ensureTeacherAuth();
+          document.getElementById('loading').classList.add('hidden');
+          document.getElementById('teacher-view').classList.remove('hidden');
+          currentRoomId = Math.floor(100000 + Math.random() * 900000).toString();
+          document.getElementById('teacher-room-id').innerText = currentRoomId;
+          
+          await initializeRoomOnDb(currentRoomId);
+          startListeningToRoom(currentRoomId);
+          startListeningToStudents(currentRoomId);
+        } else {
+          currentUser = await ensureStudentAuth();
+          document.getElementById('loading').classList.add('hidden');
+          document.getElementById('student-view').classList.remove('hidden');
+        }
+        lucide.createIcons();
+      } catch (error) {
+        console.error("Role selection auth error:", error);
+        myRole = null;
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('role-selection').classList.remove('hidden');
+        showCustomAlert("認証に失敗しました。もう一度お試しください。(" + error.message + ")");
+      }
     };
 
     async function initializeRoomOnDb(roomId) {
@@ -382,6 +408,8 @@
       await setDoc(roomRef, {
         createdAt: new Date().toISOString(),
         hostId: currentUser.uid,
+        hostEmail: currentUser.email || "",
+        authProvider: "google.com",
         status: 'active',
         requestTriggerAll: "", // 全体取得用の合図
         requestTimeAll: "",
@@ -395,6 +423,28 @@
     let unsubscribeRoom = null;
     let localStudentsData = []; // 現在の全生徒データをキャッシュ
     let currentRoomData = null; // 現在のルーム状況データをキャッシュ
+    const imageUrlCache = new Map();
+
+    async function loadStorageImage(imgElement, storagePath) {
+      if (!imgElement || !storagePath) return;
+      try {
+        if (!imageUrlCache.has(storagePath)) {
+          imageUrlCache.set(storagePath, await getDownloadURL(ref(storage, storagePath)));
+        }
+        imgElement.src = imageUrlCache.get(storagePath);
+      } catch (error) {
+        console.error("Storage image load error:", error);
+        imgElement.removeAttribute('src');
+      }
+    }
+
+    function getStudentDocRef(roomId, uid) {
+      return doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId, 'students', uid);
+    }
+
+    function getStudentImagePath(roomId, uid) {
+      return `artifacts/${appId}/rooms/${roomId}/students/${uid}/screen.jpg`;
+    }
 
     // 教員側：ルームの状態変更（リクエスト発行時のタイムスタンプ等）を監視する
     function startListeningToRoom(roomId) {
@@ -414,15 +464,12 @@
     function startListeningToStudents(roomId) {
       if (!currentUser) return;
       
-      const studentsCollRef = collection(db, 'artifacts', appId, 'public', 'data', 'students');
+      const studentsCollRef = collection(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId, 'students');
       
       unsubscribeStudents = onSnapshot(studentsCollRef, (snapshot) => {
         const students = [];
         snapshot.forEach((doc) => {
-          const data = doc.data();
-          if (data.roomId === roomId) {
-            students.push({ id: doc.id, ...data });
-          }
+          students.push({ id: doc.id, ...doc.data() });
         });
         
         localStudentsData = students;
@@ -495,6 +542,7 @@
         }, 1200);
       }
     }
+    window.requestCaptureSingle = requestCaptureSingle;
 
     // タイル一覧の更新
     function updateTilesGrid(students) {
@@ -536,12 +584,12 @@
         const isWaitingResponse = latestReqTime && (!updTime || updTime < latestReqTime) && (now - latestReqTime < 8000);
 
         const lastUpdatedText = getRelativeTime(student.updatedAt);
-        const hasImage = student.screenImage && student.screenImage.trim() !== "";
+        const hasImage = student.imageStoragePath && student.imageStoragePath.trim() !== "";
 
         tile.innerHTML = `
           <div class="relative aspect-video bg-slate-900 flex items-center justify-center overflow-hidden group">
             ${hasImage ? 
-              `<img src="${student.screenImage}" class="w-full h-full object-contain" alt="${escapeHTML(student.name)}の画面">` : 
+              `<img data-storage-path="${escapeHTML(student.imageStoragePath)}" class="w-full h-full object-contain screen-image" alt="${escapeHTML(student.name)}の画面">` : 
               `<div class="text-slate-500 flex flex-col items-center gap-1.5 p-4 text-center">
                 <div class="p-2 bg-slate-800 rounded-full text-slate-600">
                   <i data-lucide="monitor-off" class="w-6 h-6"></i>
@@ -562,7 +610,7 @@
                 <i data-lucide="clock" class="w-2.5 h-2.5"></i>
                 応答待ち...
               </div>
-            ` : student.screenImage ? `
+            ` : hasImage ? `
               <div class="absolute top-2 left-2 bg-emerald-600/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 shadow-sm">
                 <i data-lucide="check" class="w-2.5 h-2.5"></i>
                 接続中
@@ -579,6 +627,9 @@
           </div>
         `;
         grid.appendChild(tile);
+        if (hasImage) {
+          loadStorageImage(tile.querySelector('.screen-image'), student.imageStoragePath);
+        }
       });
       lucide.createIcons();
     }
@@ -611,10 +662,10 @@
       
       statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
 
-      const hasImage = student.screenImage && student.screenImage.trim() !== "";
+      const hasImage = student.imageStoragePath && student.imageStoragePath.trim() !== "";
       if (hasImage) {
-        img.src = student.screenImage;
         img.classList.remove('hidden');
+        loadStorageImage(img, student.imageStoragePath);
       } else {
         img.src = '';
         img.classList.add('hidden');
@@ -670,15 +721,18 @@
         document.getElementById('active-student-display-name').innerText = nameInput;
         document.getElementById('active-room-display-id').innerText = currentRoomId;
 
-        // 3. フラットな 'students' コレクションに参加情報を書き込む
-        const myDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
+        // 3. ルーム配下の 'students' サブコレクションに参加メタデータを書き込む
+        const myDocRef = getStudentDocRef(currentRoomId, studentId);
         
         await setDoc(myDocRef, {
           roomId: currentRoomId,
           name: nameInput,
           joinedAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          screenImage: ""
+          imageStoragePath: "",
+          imageContentType: "",
+          imageSizeBytes: 0,
+          isSharing: false
         }, { merge: true });
 
         document.getElementById('sharing-status-dot').className = "w-2.5 h-2.5 rounded-full bg-slate-400";
@@ -778,12 +832,21 @@
       document.getElementById('sending-indicator').classList.add('opacity-0');
       document.getElementById('sharing-status-dot').className = "w-2.5 h-2.5 rounded-full bg-slate-400";
 
-      // ② 切断時：画像フィールドのみをリセット
+      // ② 切断時：Storage画像を削除し、Firestoreにはメタデータだけを残す
       if (currentUser && currentRoomId && studentId) {
         try {
-          const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
+          const imagePath = getStudentImagePath(currentRoomId, studentId);
+          await deleteObject(ref(storage, imagePath)).catch((err) => {
+            if (err.code !== 'storage/object-not-found') throw err;
+          });
+          imageUrlCache.delete(imagePath);
+
+          const studentDocRef = getStudentDocRef(currentRoomId, studentId);
           await updateDoc(studentDocRef, {
-            screenImage: "",
+            imageStoragePath: "",
+            imageContentType: "",
+            imageSizeBytes: 0,
+            isSharing: false,
             updatedAt: new Date().toISOString()
           });
         } catch (err) {
@@ -831,10 +894,24 @@
             indicator.classList.add('opacity-0');
           }, 2500);
 
-          // Firestoreに画像を1枚だけアップロード（自分がオーナーなので確実に成功します）
-          const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
+          // 画像本体は Storage、Firestore には参照用メタデータのみ保存する
+          const imagePath = getStudentImagePath(currentRoomId, studentId);
+          await uploadString(ref(storage, imagePath), base64Image, 'data_url', {
+            contentType: 'image/jpeg',
+            customMetadata: {
+              appId,
+              roomId: currentRoomId,
+              studentId
+            }
+          });
+          imageUrlCache.delete(imagePath);
+
+          const studentDocRef = getStudentDocRef(currentRoomId, studentId);
           await updateDoc(studentDocRef, {
-            screenImage: base64Image,
+            imageStoragePath: imagePath,
+            imageContentType: 'image/jpeg',
+            imageSizeBytes: Math.round((base64Image.length * 3) / 4),
+            isSharing: true,
             updatedAt: new Date().toISOString()
           });
         }
@@ -852,7 +929,11 @@
       if (unsubscribeStudents) unsubscribeStudents();
       if (currentRoomId && studentId) {
         try {
-          const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
+          const imagePath = getStudentImagePath(currentRoomId, studentId);
+          await deleteObject(ref(storage, imagePath)).catch((err) => {
+            if (err.code !== 'storage/object-not-found') throw err;
+          });
+          const studentDocRef = getStudentDocRef(currentRoomId, studentId);
           await deleteDoc(studentDocRef);
         } catch (err) {
           console.error("退出時削除エラー:", err);
