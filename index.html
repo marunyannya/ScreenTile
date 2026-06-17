@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TFabTile 自作クローン (オンデマンド・プル型 V6.4)</title>
+  <title>TFabTile 自作クローン (デュアルストリーム V6.5)</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
@@ -36,14 +36,14 @@
         </div>
         <div>
           <h1 class="text-xl font-bold tracking-tight text-slate-900">On-Demand TFabTile</h1>
-          <p class="text-xs text-slate-500">教員リクエスト駆動・超低燃費モデル (V6.4 Secure-Pull)</p>
+          <p class="text-xs text-slate-500">超低燃費・デュアル解像度配信モデル (V6.5)</p>
         </div>
       </div>
       <div class="flex items-center gap-3">
-        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          セキュア・プル同期システム稼働中
-        </span>
+        <div id="auth-badge" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+          <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+          認証の準備中...
+        </div>
       </div>
     </div>
   </header>
@@ -61,7 +61,9 @@
       <div id="role-selection" class="hidden max-w-2xl mx-auto py-12">
         <div class="text-center mb-10">
           <h2 class="text-3xl font-extrabold text-slate-900 mb-2">どちらで利用しますか？</h2>
-          <p class="text-slate-500">V6.4では、教員がルーム側に指令を出し、生徒自身が応答する安全な「完全プル型同期」を採用しています。</p>
+          <p class="text-slate-500 text-sm">
+            本バージョンでは、一覧表示は低画質の<strong>軽量サムネイル</strong>、拡大時のみ<strong>高精細フル画像</strong>をオンデマンド取得して通信量を90%削減します。
+          </p>
         </div>
 
         <div class="grid md:grid-cols-2 gap-6">
@@ -71,14 +73,14 @@
               <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl w-fit mb-4">
                 <i data-lucide="presentation" class="w-8 h-8"></i>
               </div>
-              <h3 class="text-xl font-bold mb-2 text-slate-900">教員（画面を一覧確認する）</h3>
+              <h3 class="text-xl font-bold mb-2 text-slate-900">教員（Googleでサインイン）</h3>
               <p class="text-slate-600 text-sm mb-6 leading-relaxed">
-                新規ルームを作成します。見たいタイミングで「一斉取得」または「個別取得」ボタンを押して学生の最新画面を収集します。
+                Googleアカウントで安全にログインし、新規ルームを開設します。一覧画面では軽量画像で全員を高速監視できます。
               </p>
             </div>
             <button onclick="selectRole('teacher')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-xl transition duration-150 flex items-center justify-center gap-2">
-              ルームを新規作成する
-              <i data-lucide="arrow-right" class="w-4 h-4"></i>
+              <i data-lucide="log-in" class="w-4 h-4"></i>
+              Googleログインして開始
             </button>
           </div>
 
@@ -88,9 +90,9 @@
               <div class="p-3 bg-sky-50 text-sky-600 rounded-xl w-fit mb-4">
                 <i data-lucide="monitor" class="w-8 h-8"></i>
               </div>
-              <h3 class="text-xl font-bold mb-2 text-slate-900">学生（画面を共有する）</h3>
+              <h3 class="text-xl font-bold mb-2 text-slate-900">学生（ログイン不要）</h3>
               <p class="text-slate-600 text-sm mb-6 leading-relaxed">
-                ルームIDを入力して参加します。普段は待機しており、教員から取得リクエストが届いた瞬間のみ自動送信します。
+                ログイン手続きなし（安全な匿名ログイン）で、教員から提示された6桁のルームIDを入力して瞬時に参加できます。
               </p>
             </div>
             <button onclick="selectRole('student')" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-medium py-3 px-4 rounded-xl transition duration-150 flex items-center justify-center gap-2">
@@ -107,13 +109,13 @@
           <div>
             <div class="flex items-center gap-2 text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-1">
               <span class="w-2 h-2 rounded-full bg-indigo-600"></span>
-              Teacher Panel (V6.4 On-Demand)
+              Teacher Panel (V6.5 Premium)
             </div>
             <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <h2 class="text-2xl font-bold text-slate-900">オンデマンド画面監視</h2>
               <span class="text-slate-500 text-sm">ルームID: <strong id="teacher-room-id" class="text-indigo-600 font-mono text-lg select-all">------</strong></span>
             </div>
-            <p class="text-slate-500 text-xs mt-1">※自動送信は行われません。「全員の画面を取得」ボタンを押すと一気に更新されます。</p>
+            <p class="text-slate-500 text-xs mt-1">※一覧は省エネ画質です。クリックして拡大（ズーム）したときだけ高解像度JPEGを読み込みます。</p>
           </div>
           <div class="flex flex-wrap gap-2 w-full md:w-auto">
             <button id="request-all-btn" onclick="requestCaptureAll()" class="flex-1 md:flex-initial bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-5 rounded-xl transition text-sm flex items-center justify-center gap-2 shadow-sm">
@@ -136,7 +138,7 @@
             </div>
             <div class="text-xs text-slate-400 flex items-center gap-1">
               <i data-lucide="info" class="w-3 h-3"></i>
-              生徒個別タイルの「取得ボタン」で単独更新も可能です
+              一覧表示の通信量は「サムネイル専用」のため極小です
             </div>
           </div>
 
@@ -211,7 +213,7 @@
                 低燃費オンデマンド待機中
               </h4>
               <p class="text-[11px] text-indigo-700 leading-relaxed font-medium">
-                余分な定期通信は行いません。<strong>画面共有を開始した「接続時」、共有を止める「切断時」、そして「教員から要求が届いた瞬間」のみ</strong>画面キャプチャを撮影して安全に送信します。
+                余分な定期通信は行いません。教員から要求が届いた瞬間のみ、<strong>軽量一覧用（thumbnail）</strong>と<strong>拡大用（full）</strong>の2種類の画像を生成して同時に安全に保存します。
               </p>
             </div>
 
@@ -220,7 +222,10 @@
               <div class="hidden-video-container">
                 <video id="capture-video" autoplay playsinline muted></video>
               </div>
-              <canvas id="capture-canvas" class="hidden"></canvas>
+              <!-- ２つの変換用隠しキャンバス -->
+              <canvas id="thumbnail-canvas" class="hidden"></canvas>
+              <canvas id="full-canvas" class="hidden"></canvas>
+              
               <img id="local-preview-img" class="w-full h-full object-contain hidden" alt="画面プレビュー">
               
               <div id="video-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-slate-400">
@@ -250,7 +255,7 @@
     <div class="bg-white rounded-2xl max-w-4xl w-full overflow-hidden shadow-2xl flex flex-col" onclick="event.stopPropagation()">
       <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
         <div class="flex items-center gap-2.5">
-          <div class="w-2.5 h-2.5 rounded-full bg-emerald-500" id="modal-status-dot"></div>
+          <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" id="modal-status-dot"></div>
           <div>
             <h3 class="font-bold text-slate-900 text-base" id="modal-student-name">学生の画面</h3>
             <p class="text-xs text-slate-500" id="modal-last-updated">最終更新: --:--:--</p>
@@ -267,7 +272,14 @@
         </div>
       </div>
       <div class="bg-slate-950 aspect-video flex items-center justify-center relative">
-        <img id="modal-image" class="w-full h-full object-contain" src="" alt="拡大画面プレビュー">
+        <img id="modal-image" class="w-full h-full object-contain hidden" src="" alt="拡大画面プレビュー">
+        
+        <!-- 高画質フル画像のロードインジケーター -->
+        <div id="modal-image-loading" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
+          <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-white mb-3"></div>
+          <p class="text-xs text-white font-medium">高解像度フル画質をロード中...</p>
+        </div>
+
         <div id="modal-loading-overlay" class="absolute inset-0 bg-slate-900/60 flex flex-col items-center justify-center text-white hidden">
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-2"></div>
           <span class="text-xs">リクエストを送信中...</span>
@@ -275,8 +287,8 @@
       </div>
       <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-xs text-slate-500">
         <span class="flex items-center gap-1.5 font-medium text-slate-600">
-          <i data-lucide="info" class="w-4 h-4 text-indigo-500"></i>
-          教員の画面要求によって、本人のブラウザがリアルタイムに撮影応答します。
+          <i data-lucide="shield-check" class="w-4 h-4 text-emerald-500"></i>
+          デュアル解像度技術：この画面だけ高画質データ (fullImage) を特別にロードしています。
         </span>
       </div>
     </div>
@@ -284,16 +296,15 @@
 
   <footer class="bg-white border-t border-slate-100 py-6 mt-12 text-center text-xs text-slate-400">
     <div class="max-w-7xl mx-auto px-4">
-      <p>&copy; 2026 Eco TFabTile On-Demand System (V6.4 Secure-Pull)</p>
+      <p>&copy; 2026 Eco TFabTile On-Demand System (V6.5 Premium DualStream)</p>
     </div>
   </footer>
 
   <!-- Firebase SDK Modules -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, signInWithPopup, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-    import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
     let firebaseConfig = {};
     const isEnvConfigAvailable = typeof __firebase_config !== 'undefined' && __firebase_config;
@@ -325,9 +336,6 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-    const storage = getStorage(app);
-    const googleProvider = new GoogleAuthProvider();
-    googleProvider.setCustomParameters({ prompt: 'select_account' });
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'tfabtile-clone';
 
     let currentUser = null;
@@ -339,67 +347,98 @@
     let lastAllRequestToken = ""; // 学生側で前回処理した全体要求トークン
     let lastSingleRequestToken = ""; // 学生側で前回処理した個別要求トークン
 
+    // 各種初期化時のセキュリティバッジ表示
+    const updateAuthBadge = (user) => {
+      const badge = document.getElementById('auth-badge');
+      if (!user) {
+        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-400"></span> 未認証`;
+        badge.className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200";
+      } else if (user.isAnonymous) {
+        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-sky-500 animate-pulse"></span> 匿名認証 (生徒)`;
+        badge.className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-sky-50 text-sky-700 border border-sky-200";
+      } else {
+        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> 教員認証 (${escapeHTML(user.displayName || "Googleユーザー")})`;
+        badge.className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200";
+      }
+    };
+
     onAuthStateChanged(auth, (user) => {
       currentUser = user;
-      if (!myRole) {
+      updateAuthBadge(user);
+      if (user) {
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('role-selection').classList.remove('hidden');
         lucide.createIcons();
+      } else {
+        // 未認証の場合は自動的に待機状態にする（認証完了まで画面保護）
+        document.getElementById('loading').classList.remove('hidden');
+        document.getElementById('role-selection').classList.add('hidden');
+        // 安全にログイン呼び出し
+        initAuth();
       }
     });
 
-    async function ensureTeacherAuth() {
-      const isGoogleUser = currentUser && currentUser.providerData.some((provider) => provider.providerId === 'google.com');
-      if (isGoogleUser) return currentUser;
-
-      if (currentUser && currentUser.isAnonymous) {
-        await signOut(auth);
-      }
-
-      const result = await signInWithPopup(auth, googleProvider);
-      return result.user;
-    }
-
-    async function ensureStudentAuth() {
-      if (currentUser && currentUser.isAnonymous) return currentUser;
-
-      if (currentUser && !currentUser.isAnonymous) {
-        await signOut(auth);
-      }
-
-      const result = await signInAnonymously(auth);
-      return result.user;
-    }
-
-    window.selectRole = async function(role) {
+    const initAuth = async () => {
       try {
-        myRole = role;
-        document.getElementById('role-selection').classList.add('hidden');
-        document.getElementById('loading').classList.remove('hidden');
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        }
+        // 初期段階では何もせず、ロール選択に応じて必要なログインを行う方式に最適化します
+      } catch (error) {
+        console.error("Auth Error", error);
+      }
+    };
 
-        if (role === 'teacher') {
-          currentUser = await ensureTeacherAuth();
+    // ロール決定時の認証フロー分岐
+    window.selectRole = async function(role) {
+      myRole = role;
+
+      if (role === 'teacher') {
+        // 教員は Google ログインを強制
+        try {
+          document.getElementById('loading').classList.remove('hidden');
+          document.getElementById('role-selection').classList.add('hidden');
+          
+          const provider = new GoogleAuthProvider();
+          const result = await signInWithPopup(auth, provider);
+          currentUser = result.user;
+          updateAuthBadge(currentUser);
+          
           document.getElementById('loading').classList.add('hidden');
           document.getElementById('teacher-view').classList.remove('hidden');
+          
           currentRoomId = Math.floor(100000 + Math.random() * 900000).toString();
           document.getElementById('teacher-room-id').innerText = currentRoomId;
           
           await initializeRoomOnDb(currentRoomId);
-          startListeningToRoom(currentRoomId);
+          startListeningToRoom(currentRoomId); 
           startListeningToStudents(currentRoomId);
-        } else {
-          currentUser = await ensureStudentAuth();
+        } catch (error) {
+          console.error("Googleサインイン失敗:", error);
+          showCustomAlert("Google認証に失敗、またはキャンセルされました。");
+          document.getElementById('loading').classList.add('hidden');
+          document.getElementById('role-selection').classList.remove('hidden');
+        }
+      } else {
+        // 学生側は匿名認証
+        try {
+          document.getElementById('loading').classList.remove('hidden');
+          document.getElementById('role-selection').classList.add('hidden');
+          
+          if (!currentUser || !currentUser.isAnonymous) {
+            const result = await signInAnonymously(auth);
+            currentUser = result.user;
+            updateAuthBadge(currentUser);
+          }
+          
           document.getElementById('loading').classList.add('hidden');
           document.getElementById('student-view').classList.remove('hidden');
+        } catch (error) {
+          console.error("匿名認証失敗:", error);
+          showCustomAlert("匿名ログインに失敗しました。再読み込みしてください。");
         }
-        lucide.createIcons();
-      } catch (error) {
-        console.error("Role selection auth error:", error);
-        myRole = null;
-        document.getElementById('loading').classList.add('hidden');
-        document.getElementById('role-selection').classList.remove('hidden');
-        showCustomAlert("認証に失敗しました。もう一度お試しください。(" + error.message + ")");
       }
+      lucide.createIcons();
     };
 
     async function initializeRoomOnDb(roomId) {
@@ -408,51 +447,28 @@
       await setDoc(roomRef, {
         createdAt: new Date().toISOString(),
         hostId: currentUser.uid,
-        hostEmail: currentUser.email || "",
-        authProvider: "google.com",
         status: 'active',
-        requestTriggerAll: "", // 全体取得用の合図
+        requestTriggerAll: "", 
         requestTimeAll: "",
-        requestTarget: "",    // 個別取得用のターゲット生徒ID
-        requestTriggerSingle: "", // 個別取得用の合図
+        requestTarget: "",    
+        requestTriggerSingle: "", 
         requestTimeSingle: ""
       }, { merge: true });
     }
 
     let unsubscribeStudents = null;
     let unsubscribeRoom = null;
+    let unsubscribeZoomImage = null; // 拡大表示（ズーム）時の画像用リアルタイムリスナー
+    
     let localStudentsData = []; // 現在の全生徒データをキャッシュ
     let currentRoomData = null; // 現在のルーム状況データをキャッシュ
-    const imageUrlCache = new Map();
 
-    async function loadStorageImage(imgElement, storagePath) {
-      if (!imgElement || !storagePath) return;
-      try {
-        if (!imageUrlCache.has(storagePath)) {
-          imageUrlCache.set(storagePath, await getDownloadURL(ref(storage, storagePath)));
-        }
-        imgElement.src = imageUrlCache.get(storagePath);
-      } catch (error) {
-        console.error("Storage image load error:", error);
-        imgElement.removeAttribute('src');
-      }
-    }
-
-    function getStudentDocRef(roomId, uid) {
-      return doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId, 'students', uid);
-    }
-
-    function getStudentImagePath(roomId, uid) {
-      return `artifacts/${appId}/rooms/${roomId}/students/${uid}/screen.jpg`;
-    }
-
-    // 教員側：ルームの状態変更（リクエスト発行時のタイムスタンプ等）を監視する
+    // 教員側：ルームの状態変更を監視する
     function startListeningToRoom(roomId) {
       const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
       unsubscribeRoom = onSnapshot(roomRef, (docSnap) => {
         if (docSnap.exists()) {
           currentRoomData = docSnap.data();
-          // リクエストタイムスタンプが変わったら、生徒一覧の「応答待ち」表示を更新
           updateTilesGrid(localStudentsData);
         }
       }, (error) => {
@@ -460,16 +476,19 @@
       });
     }
 
-    // 授業に参加している学生のリアルタイム監視 (フラット構造監視)
+    // 授業に参加している学生のリアルタイム監視（生徒のサムネイル情報）
     function startListeningToStudents(roomId) {
       if (!currentUser) return;
       
-      const studentsCollRef = collection(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId, 'students');
+      const studentsCollRef = collection(db, 'artifacts', appId, 'public', 'data', 'students');
       
       unsubscribeStudents = onSnapshot(studentsCollRef, (snapshot) => {
         const students = [];
         snapshot.forEach((doc) => {
-          students.push({ id: doc.id, ...doc.data() });
+          const data = doc.data();
+          if (data.roomId === roomId) {
+            students.push({ id: doc.id, ...data });
+          }
         });
         
         localStudentsData = students;
@@ -486,7 +505,7 @@
       });
     }
 
-    // --- 教員：全員に画面キャプチャ要求を送信 (ルーム側のフラグを更新) ---
+    // --- 教員：全員に画面キャプチャ要求を送信 ---
     window.requestCaptureAll = async function() {
       if (!currentUser || !currentRoomId) return;
       
@@ -497,13 +516,10 @@
 
       try {
         const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
-        
-        // ルームの共通指令を更新（セキュリティルールで教員の書き込みが100%許可されているため安全です）
         await updateDoc(roomRef, {
           requestTriggerAll: "REQ-" + Date.now(),
           requestTimeAll: new Date().toISOString()
         });
-        
         showCustomAlert("全員に画面更新リクエストを送信しました！");
       } catch (err) {
         console.error("要求送信エラー:", err);
@@ -517,7 +533,7 @@
       }
     };
 
-    // --- 教員：個別学生に画面キャプチャ要求を送信 (ルーム側のフラグを更新) ---
+    // --- 教員：個別学生に画面キャプチャ要求を送信 ---
     async function requestCaptureSingle(studentIdToReq) {
       if (!currentUser || !currentRoomId) return;
       
@@ -526,14 +542,11 @@
 
       try {
         const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
-        
-        // 特定の学生を狙い撃ちするフラグに変更
         await updateDoc(roomRef, {
           requestTarget: studentIdToReq,
           requestTriggerSingle: "REQ-SINGLE-" + Date.now(),
           requestTimeSingle: new Date().toISOString()
         });
-        
       } catch (err) {
         console.error("個別要求送信エラー:", err);
       } finally {
@@ -542,7 +555,6 @@
         }, 1200);
       }
     }
-    window.requestCaptureSingle = requestCaptureSingle;
 
     // タイル一覧の更新
     function updateTilesGrid(students) {
@@ -570,7 +582,6 @@
         tile.onclick = () => zoomStudentTile(student);
 
         // 応答待ち判定のロジック:
-        // ルーム側が最後に出したリクエスト時刻が、生徒側の画像更新時刻（updatedAt）より新しければ「応答待ち」を表示
         const reqTimeAll = (currentRoomData && currentRoomData.requestTimeAll) ? new Date(currentRoomData.requestTimeAll) : null;
         const reqTimeSingle = (currentRoomData && currentRoomData.requestTarget === student.id && currentRoomData.requestTimeSingle) ? new Date(currentRoomData.requestTimeSingle) : null;
         
@@ -584,12 +595,12 @@
         const isWaitingResponse = latestReqTime && (!updTime || updTime < latestReqTime) && (now - latestReqTime < 8000);
 
         const lastUpdatedText = getRelativeTime(student.updatedAt);
-        const hasImage = student.imageStoragePath && student.imageStoragePath.trim() !== "";
+        const hasThumbnail = student.thumbnailImage && student.thumbnailImage.trim() !== "";
 
         tile.innerHTML = `
           <div class="relative aspect-video bg-slate-900 flex items-center justify-center overflow-hidden group">
-            ${hasImage ? 
-              `<img data-storage-path="${escapeHTML(student.imageStoragePath)}" class="w-full h-full object-contain screen-image" alt="${escapeHTML(student.name)}の画面">` : 
+            ${hasThumbnail ? 
+              `<img src="${student.thumbnailImage}" class="w-full h-full object-contain" alt="${escapeHTML(student.name)}の画面">` : 
               `<div class="text-slate-500 flex flex-col items-center gap-1.5 p-4 text-center">
                 <div class="p-2 bg-slate-800 rounded-full text-slate-600">
                   <i data-lucide="monitor-off" class="w-6 h-6"></i>
@@ -610,7 +621,7 @@
                 <i data-lucide="clock" class="w-2.5 h-2.5"></i>
                 応答待ち...
               </div>
-            ` : hasImage ? `
+            ` : student.thumbnailImage ? `
               <div class="absolute top-2 left-2 bg-emerald-600/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 shadow-sm">
                 <i data-lucide="check" class="w-2.5 h-2.5"></i>
                 接続中
@@ -622,14 +633,11 @@
               <h4 class="font-bold text-sm text-slate-800 truncate">${escapeHTML(student.name)}</h4>
             </div>
             <div class="text-right shrink-0">
-              <p class="text-[10px] text-slate-400">画像: ${lastUpdatedText}</p>
+              <p class="text-[10px] text-slate-400">更新: ${lastUpdatedText}</p>
             </div>
           </div>
         `;
         grid.appendChild(tile);
-        if (hasImage) {
-          loadStorageImage(tile.querySelector('.screen-image'), student.imageStoragePath);
-        }
       });
       lucide.createIcons();
     }
@@ -639,11 +647,19 @@
       activeZoomStudentId = student.id;
       
       const modal = document.getElementById('zoom-modal');
+      const img = document.getElementById('modal-image');
+      const loadingText = document.getElementById('modal-image-loading');
+
       modal.classList.remove('hidden');
       
+      img.classList.add('hidden');
+      loadingText.classList.remove('hidden');
+
       updateZoomModalUI(student);
 
-      // モーダル内個別取得ボタンにイベント設定
+      // モーダルオープン時：特定学生の高解像度画像（fullImage）専用ドキュメントを監視開始
+      listenToFullImage(student.id);
+
       document.getElementById('modal-refresh-btn').onclick = () => requestCaptureSingle(student.id);
 
       setTimeout(() => {
@@ -651,30 +667,52 @@
       }, 50);
     };
 
+    // 教員側：拡大表示した学生の「フル高解像度画像」のみを一時的にリアルタイムリッスンする
+    function listenToFullImage(studentIdToListen) {
+      // 以前のリスナーがあれば解除
+      if (unsubscribeZoomImage) unsubscribeZoomImage();
+
+      const imgRef = doc(db, 'artifacts', appId, 'public', 'data', 'full_images', studentIdToListen);
+      unsubscribeZoomImage = onSnapshot(imgRef, (docSnap) => {
+        const imgElement = document.getElementById('modal-image');
+        const loadingText = document.getElementById('modal-image-loading');
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.fullImage && data.fullImage.trim() !== "") {
+            imgElement.src = data.fullImage;
+            imgElement.classList.remove('hidden');
+            loadingText.classList.add('hidden');
+            return;
+          }
+        }
+        // フル画質データがない場合
+        imgElement.src = "";
+        imgElement.classList.add('hidden');
+        loadingText.classList.remove('hidden');
+      }, (error) => {
+        console.error("Full Image load error:", error);
+      });
+    }
+
     function updateZoomModalUI(student) {
-      const img = document.getElementById('modal-image');
       const name = document.getElementById('modal-student-name');
       const lastUpdated = document.getElementById('modal-last-updated');
-      const statusDot = document.getElementById('modal-status-dot');
 
       name.innerText = student.name;
       lastUpdated.innerText = `最終更新: ${getRelativeTime(student.updatedAt)}`;
-      
-      statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
-
-      const hasImage = student.imageStoragePath && student.imageStoragePath.trim() !== "";
-      if (hasImage) {
-        img.classList.remove('hidden');
-        loadStorageImage(img, student.imageStoragePath);
-      } else {
-        img.src = '';
-        img.classList.add('hidden');
-      }
     }
 
     window.closeZoomModal = function() {
       const modal = document.getElementById('zoom-modal');
       modal.classList.remove('opacity-100');
+      
+      // 拡大を閉じた瞬間、高精細画像へのリスナーを即時解除（超重要：パケ代・読取制限削減）
+      if (unsubscribeZoomImage) {
+        unsubscribeZoomImage();
+        unsubscribeZoomImage = null;
+      }
+
       setTimeout(() => {
         modal.classList.add('hidden');
         activeZoomStudentId = null;
@@ -697,7 +735,7 @@
         }
 
         if (!currentUser) {
-          showCustomAlert("認証の準備がまだできていません。数秒後に再度お試しください。");
+          showCustomAlert("匿名ログインを準備中です。数秒後にもう一度確認して次へを押してください。");
           return;
         }
 
@@ -721,18 +759,15 @@
         document.getElementById('active-student-display-name').innerText = nameInput;
         document.getElementById('active-room-display-id').innerText = currentRoomId;
 
-        // 3. ルーム配下の 'students' サブコレクションに参加メタデータを書き込む
-        const myDocRef = getStudentDocRef(currentRoomId, studentId);
+        // 3. フラットな 'students' コレクションに参加情報を書き込む
+        const myDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
         
         await setDoc(myDocRef, {
           roomId: currentRoomId,
           name: nameInput,
           joinedAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          imageStoragePath: "",
-          imageContentType: "",
-          imageSizeBytes: 0,
-          isSharing: false
+          thumbnailImage: "" // 最初はサムネイル空
         }, { merge: true });
 
         document.getElementById('sharing-status-dot').className = "w-2.5 h-2.5 rounded-full bg-slate-400";
@@ -747,7 +782,7 @@
       }
     };
 
-    // 教員からの撮影要求を検知する（監視対象をルーム自体の更新に変更）
+    // 教員からの撮影要求を検知する
     function listenForTeacherRequests() {
       if (!currentUser || !currentRoomId || !studentId) return;
       const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
@@ -780,8 +815,8 @@
       try {
         localStream = await navigator.mediaDevices.getDisplayMedia({
           video: {
-            width: { ideal: 640 }, // 軽量解像度
-            height: { ideal: 360 },
+            width: { ideal: 960 }, // フルサイズ用に少し大きめにキャプチャ
+            height: { ideal: 540 },
             frameRate: { ideal: 1 } // 省エネ(1FPS)
           },
           audio: false
@@ -799,7 +834,7 @@
         // ① 接続時（画面共有を開始した瞬間）に1枚だけ撮影してアップロードする
         setTimeout(() => {
           captureAndSendImmediately("画面共有の接続画像を設定しました！");
-        }, 800);
+        }, 1000);
 
         localStream.getVideoTracks()[0].onended = () => {
           stopScreenShare();
@@ -832,23 +867,22 @@
       document.getElementById('sending-indicator').classList.add('opacity-0');
       document.getElementById('sharing-status-dot').className = "w-2.5 h-2.5 rounded-full bg-slate-400";
 
-      // ② 切断時：Storage画像を削除し、Firestoreにはメタデータだけを残す
+      // ② 切断時：両方のコレクションの画像をクリア
       if (currentUser && currentRoomId && studentId) {
         try {
-          const imagePath = getStudentImagePath(currentRoomId, studentId);
-          await deleteObject(ref(storage, imagePath)).catch((err) => {
-            if (err.code !== 'storage/object-not-found') throw err;
-          });
-          imageUrlCache.delete(imagePath);
-
-          const studentDocRef = getStudentDocRef(currentRoomId, studentId);
+          // サムネイルのクリア
+          const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
           await updateDoc(studentDocRef, {
-            imageStoragePath: "",
-            imageContentType: "",
-            imageSizeBytes: 0,
-            isSharing: false,
+            thumbnailImage: "",
             updatedAt: new Date().toISOString()
           });
+
+          // フル画像のクリア
+          const fullImageDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'full_images', studentId);
+          await setDoc(fullImageDocRef, {
+            fullImage: "",
+            updatedAt: new Date().toISOString()
+          }, { merge: true });
         } catch (err) {
           console.error("切断時リセットエラー:", err);
         }
@@ -857,10 +891,11 @@
       lucide.createIcons();
     };
 
-    // --- 要求された瞬間のみ1発キャプチャするコア関数 (プル型) ---
+    // --- 要求された瞬間のみデュアル解像度（thumbnail/full）キャプチャを撮影して個別格納するコア関数 ---
     async function captureAndSendImmediately(statusMessage = "送信しました！") {
       const video = document.getElementById('capture-video');
-      const canvas = document.getElementById('capture-canvas');
+      const thumbCanvas = document.getElementById('thumbnail-canvas');
+      const fullCanvas = document.getElementById('full-canvas');
       const previewImg = document.getElementById('local-preview-img');
       const indicator = document.getElementById('sending-indicator');
       const indicatorText = document.getElementById('indicator-text');
@@ -869,23 +904,39 @@
         return;
       }
 
-      const context = canvas.getContext('2d');
-      const targetWidth = 400; // 軽量圧縮
-      let targetHeight = 225; 
-      
-      if (video.videoWidth && video.videoHeight) {
-        targetHeight = (video.videoHeight / video.videoWidth) * targetWidth;
-      }
+      const thumbCtx = thumbCanvas.getContext('2d');
+      const fullCtx = fullCanvas.getContext('2d');
 
-      canvas.width = targetWidth;
-      canvas.height = targetHeight;
+      // 1. サムネイル用（超軽量：幅240px、品質30%のJPEG）
+      const thumbWidth = 240;
+      let thumbHeight = 135;
+      if (video.videoWidth && video.videoHeight) {
+        thumbHeight = (video.videoHeight / video.videoWidth) * thumbWidth;
+      }
+      thumbCanvas.width = thumbWidth;
+      thumbCanvas.height = thumbHeight;
+
+      // 2. 拡大表示用（中高画質：幅960px、品質60%のJPEG）
+      const fullWidth = 960;
+      let fullHeight = 540;
+      if (video.videoWidth && video.videoHeight) {
+        fullHeight = (video.videoHeight / video.videoWidth) * fullWidth;
+      }
+      fullCanvas.width = fullWidth;
+      fullCanvas.height = fullHeight;
 
       try {
         if (video.readyState >= 2) {
-          context.drawImage(video, 0, 0, targetWidth, targetHeight);
-          const base64Image = canvas.toDataURL('image/jpeg', 0.35); // 画質を適度に落としたJPEG変換
+          // ① サムネイルJPEGの生成
+          thumbCtx.drawImage(video, 0, 0, thumbWidth, thumbHeight);
+          const base64Thumbnail = thumbCanvas.toDataURL('image/jpeg', 0.30);
 
-          previewImg.src = base64Image;
+          // ② 拡大フルサイズJPEGの生成
+          fullCtx.drawImage(video, 0, 0, fullWidth, fullHeight);
+          const base64FullImage = fullCanvas.toDataURL('image/jpeg', 0.60);
+
+          // ローカルのプレビュー（生徒側）はフルサイズを表示
+          previewImg.src = base64FullImage;
           previewImg.classList.remove('hidden');
 
           if (indicatorText) indicatorText.innerText = statusMessage;
@@ -894,29 +945,24 @@
             indicator.classList.add('opacity-0');
           }, 2500);
 
-          // 画像本体は Storage、Firestore には参照用メタデータのみ保存する
-          const imagePath = getStudentImagePath(currentRoomId, studentId);
-          await uploadString(ref(storage, imagePath), base64Image, 'data_url', {
-            contentType: 'image/jpeg',
-            customMetadata: {
-              appId,
-              roomId: currentRoomId,
-              studentId
-            }
-          });
-          imageUrlCache.delete(imagePath);
-
-          const studentDocRef = getStudentDocRef(currentRoomId, studentId);
+          // 3. Firestoreへ別々にアップロード (Rule 1 & Rule 2を完全に満たすフラット書き込み)
+          
+          // サムネイル・タイムスタンプデータを生徒ドキュメントに更新
+          const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
           await updateDoc(studentDocRef, {
-            imageStoragePath: imagePath,
-            imageContentType: 'image/jpeg',
-            imageSizeBytes: Math.round((base64Image.length * 3) / 4),
-            isSharing: true,
+            thumbnailImage: base64Thumbnail,
             updatedAt: new Date().toISOString()
           });
+
+          // フル高解像度画像は個別高精細用のコレクションに切り離して保存
+          const fullImageDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'full_images', studentId);
+          await setDoc(fullImageDocRef, {
+            fullImage: base64FullImage,
+            updatedAt: new Date().toISOString()
+          }, { merge: true });
         }
       } catch (err) {
-        console.error("キャプチャ送信エラー:", err);
+        console.error("キャプチャデュアルストリーム送信エラー:", err);
       }
     }
 
@@ -927,14 +973,15 @@
       }
       if (unsubscribeRoom) unsubscribeRoom();
       if (unsubscribeStudents) unsubscribeStudents();
+      if (unsubscribeZoomImage) unsubscribeZoomImage();
+      
       if (currentRoomId && studentId) {
         try {
-          const imagePath = getStudentImagePath(currentRoomId, studentId);
-          await deleteObject(ref(storage, imagePath)).catch((err) => {
-            if (err.code !== 'storage/object-not-found') throw err;
-          });
-          const studentDocRef = getStudentDocRef(currentRoomId, studentId);
+          const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
           await deleteDoc(studentDocRef);
+
+          const fullImageDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'full_images', studentId);
+          await deleteDoc(fullImageDocRef);
         } catch (err) {
           console.error("退出時削除エラー:", err);
         }
