@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TFabTile 自作クローン (オンデマンド・プル型 V6)</title>
+  <title>TFabTile 自作クローン (オンデマンド・プル型 V6.1)</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
@@ -32,11 +32,11 @@
     <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
       <div class="flex items-center gap-3">
         <div class="p-2 bg-indigo-600 text-white rounded-lg">
-          <i data-lucide="refresh-cw" class="w-6 h-6 animate-spin animate-duration-[10s]"></i>
+          <i data-lucide="refresh-cw" class="w-6 h-6"></i>
         </div>
         <div>
           <h1 class="text-xl font-bold tracking-tight text-slate-900">On-Demand TFabTile</h1>
-          <p class="text-xs text-slate-500">教員リクエスト駆動・超低燃費モデル (V6)</p>
+          <p class="text-xs text-slate-500">教員リクエスト駆動・超低燃費モデル (V6.1)</p>
         </div>
       </div>
       <div class="flex items-center gap-3">
@@ -61,7 +61,7 @@
       <div id="role-selection" class="hidden max-w-2xl mx-auto py-12">
         <div class="text-center mb-10">
           <h2 class="text-3xl font-extrabold text-slate-900 mb-2">どちらで利用しますか？</h2>
-          <p class="text-slate-500">V6では教員が「更新」を押した時だけ画像を送信し、Firebaseの無料枠消費を最小限に抑えます。</p>
+          <p class="text-slate-500">V6.1では教員が「更新」を押した時・接続時・切断時のみ画像を通信し、Firebaseの無料枠消費を最小限に抑えます。</p>
         </div>
 
         <div class="grid md:grid-cols-2 gap-6">
@@ -107,7 +107,7 @@
           <div>
             <div class="flex items-center gap-2 text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-1">
               <span class="w-2 h-2 rounded-full bg-indigo-600"></span>
-              Teacher Panel (V6 On-Demand)
+              Teacher Panel (V6.1 On-Demand)
             </div>
             <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <h2 class="text-2xl font-bold text-slate-900">オンデマンド画面監視</h2>
@@ -210,13 +210,9 @@
                 <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
                 低燃費オンデマンド待機中
               </h4>
-              <p class="text-[11px] text-indigo-700 leading-relaxed">
-                V6システムは常時画像を送ることはしません。<strong>教員が画面更新ボタンを押した瞬間のみ</strong>、あなたのPC画面をキャプチャして1回だけ自動的に安全に送信します。
+              <p class="text-[11px] text-indigo-700 leading-relaxed font-medium">
+                V6.1システムは余分な通信を行いません。<strong>画面共有を開始した「接続時」、共有を止める「切断時」、そして「教員から要求が届いた瞬間」のみ</strong>画面キャプチャを撮影して安全に送信します。
               </p>
-              <div class="mt-2 text-[10px] text-slate-500 flex items-center gap-1.5 bg-white/60 p-2 rounded border border-indigo-50/50">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>教員監視システムへの生存アピール(生存パルス): 60秒毎送信中</span>
-              </div>
             </div>
 
             <!-- 共有プレビュー表示 -->
@@ -235,7 +231,7 @@
               <!-- 送信ステータスバッジ -->
               <div id="sending-indicator" class="absolute top-3 right-3 bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-full flex items-center gap-1.5 opacity-0 transition-opacity duration-300">
                 <span class="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
-                <span id="indicator-text">先生からの要求で画面キャプチャを送信しました！</span>
+                <span id="indicator-text">画面キャプチャを送信しました！</span>
               </div>
             </div>
 
@@ -254,7 +250,7 @@
     <div class="bg-white rounded-2xl max-w-4xl w-full overflow-hidden shadow-2xl flex flex-col" onclick="event.stopPropagation()">
       <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
         <div class="flex items-center gap-2.5">
-          <div class="w-2.5 h-2.5 rounded-full bg-indigo-500" id="modal-status-dot"></div>
+          <div class="w-2.5 h-2.5 rounded-full bg-emerald-500" id="modal-status-dot"></div>
           <div>
             <h3 class="font-bold text-slate-900 text-base" id="modal-student-name">学生の画面</h3>
             <p class="text-xs text-slate-500" id="modal-last-updated">最終更新: --:--:--</p>
@@ -288,7 +284,7 @@
 
   <footer class="bg-white border-t border-slate-100 py-6 mt-12 text-center text-xs text-slate-400">
     <div class="max-w-7xl mx-auto px-4">
-      <p>&copy; 2026 Eco TFabTile On-Demand System (V6)</p>
+      <p>&copy; 2026 Eco TFabTile On-Demand System (V6.1)</p>
     </div>
   </footer>
 
@@ -336,7 +332,6 @@
     let studentId = null; 
     let localStream = null;
 
-    let pulseInterval = null; // 生存パルス（1分毎）
     let lastRequestToken = ""; // 学生側で前回処理した撮影要求トークン
 
     const initAuth = async () => {
@@ -430,9 +425,7 @@
       try {
         const newToken = "REQ-" + Date.now();
         
-        // 1. 各学生に個別の撮影トリガーを一括更新
-        // トラフィックを劇的に減らすため、全学生のドキュメントにリクエストトークンを仕込み、
-        // 生徒側が自分のドキュメントを監視（リッスン）することで即座に反応させます。
+        // トラフィックを抑えつつ、全学生のドキュメントにリクエストトークンを仕込みます。
         for (const student of localStudentsData) {
           const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId, 'students', student.id);
           await updateDoc(studentDocRef, {
@@ -504,10 +497,6 @@
         tile.className = 'student-tile bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition duration-200 flex flex-col cursor-pointer';
         tile.onclick = () => zoomStudentTile(student);
 
-        // 生存確認(最後のアクティブから80秒経過、パルスは60秒周期)
-        const lastSeenDate = student.lastSeen ? new Date(student.lastSeen) : null;
-        const isOffline = !lastSeenDate || (now - lastSeenDate > 80 * 1000); 
-
         // 撮影要求中かつ画像が来ていない場合（切断/遅延検知）
         const reqTime = student.requestTime ? new Date(student.requestTime) : null;
         const updTime = student.updatedAt ? new Date(student.updatedAt) : null;
@@ -519,7 +508,7 @@
         tile.innerHTML = `
           <div class="relative aspect-video bg-slate-900 flex items-center justify-center overflow-hidden group">
             ${hasImage ? 
-              `<img src="${student.screenImage}" class="w-full h-full object-contain ${isOffline ? 'opacity-40 grayscale' : ''}" alt="${escapeHTML(student.name)}の画面">` : 
+              `<img src="${student.screenImage}" class="w-full h-full object-contain" alt="${escapeHTML(student.name)}の画面">` : 
               `<div class="text-slate-500 flex flex-col items-center gap-1.5 p-4 text-center">
                 <div class="p-2 bg-slate-800 rounded-full text-slate-600">
                   <i data-lucide="monitor-off" class="w-6 h-6"></i>
@@ -537,15 +526,10 @@
             </div>
 
             <!-- 状態バッジ -->
-            ${isOffline ? `
-              <div class="absolute top-2 left-2 bg-red-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 shadow-sm">
-                <i data-lucide="alert-triangle" class="w-2.5 h-2.5"></i>
-                切断のおそれ (パルス途絶)
-              </div>
-            ` : isWaitingResponse ? `
+            ${isWaitingResponse ? `
               <div class="absolute top-2 left-2 bg-amber-500 text-slate-900 text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 shadow-sm">
                 <i data-lucide="clock" class="w-2.5 h-2.5"></i>
-                応答待ち... (共有未開始?)
+                応答待ち...
               </div>
             ` : student.screenImage ? `
               <div class="absolute top-2 left-2 bg-emerald-600/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 shadow-sm">
@@ -594,17 +578,7 @@
       name.innerText = student.name;
       lastUpdated.innerText = `最終更新: ${getRelativeTime(student.updatedAt)}`;
       
-      // オンライン状態確認
-      const now = new Date();
-      const lastSeenDate = student.lastSeen ? new Date(student.lastSeen) : null;
-      const isOffline = !lastSeenDate || (now - lastSeenDate > 80 * 1000); 
-
-      if (isOffline) {
-        statusDot.className = "w-2.5 h-2.5 rounded-full bg-red-500";
-        lastUpdated.innerText += " (切断中のおそれ)";
-      } else {
-        statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
-      }
+      statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
 
       const hasImage = student.screenImage && student.screenImage.trim() !== "";
       if (hasImage) {
@@ -663,7 +637,6 @@
         name: nameInput,
         joinedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        lastSeen: new Date().toISOString(), // パルス
         requestTrigger: "",
         screenImage: ""
       }, { merge: true });
@@ -673,27 +646,8 @@
       // 学生側のリスナー：先生から撮影リクエストが届いたか監視する
       listenForTeacherRequests();
 
-      // 低頻度の生存パルスタイマー（60秒おきに数文字のテキストだけ送信。通信量はほぼ皆無）
-      startPulseHeartbeat();
-
       lucide.createIcons();
     };
-
-    // 生存確認パルス（教員側で生存・死亡を判断するためのタイムスタンプ送信）
-    function startPulseHeartbeat() {
-      if (pulseInterval) clearInterval(pulseInterval);
-      pulseInterval = setInterval(async () => {
-        if (!currentUser || !currentRoomId || !studentId) return;
-        const myDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId, 'students', studentId);
-        try {
-          await updateDoc(myDocRef, {
-            lastSeen: new Date().toISOString()
-          });
-        } catch (e) {
-          console.error("Pulse error:", e);
-        }
-      }, 60000); // 60秒周期
-    }
 
     // 教員からの撮影要求を検知する
     function listenForTeacherRequests() {
@@ -707,8 +661,8 @@
         // 撮影要求トークンが更新されているかチェック
         if (data.requestTrigger && data.requestTrigger !== lastRequestToken) {
           lastRequestToken = data.requestTrigger;
-          // 即時キャプチャを実行！
-          captureAndSendImmediately();
+          // ③ 教員から要求があった瞬間の撮影・送信
+          captureAndSendImmediately("先生からの要求で画面キャプチャを送信しました！");
         }
       }, (err) => {
         console.error("Request listen error:", err);
@@ -739,10 +693,10 @@
 
         document.getElementById('sharing-status-dot').className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse animate-duration-1000";
 
-        // 共有開始の瞬間に、初期画面として1枚だけ撮影してアップロードする（①画面共有開始時）
+        // ① 接続時（画面共有を開始した瞬間）に1枚だけ撮影してアップロードする
         setTimeout(() => {
-          captureAndSendImmediately();
-        }, 500);
+          captureAndSendImmediately("画面共有の接続画像を設定しました！");
+        }, 800);
 
         localStream.getVideoTracks()[0].onended = () => {
           stopScreenShare();
@@ -755,6 +709,7 @@
       lucide.createIcons();
     };
 
+    // ② 切断時の処理
     window.stopScreenShare = async function() {
       if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
@@ -774,7 +729,7 @@
       document.getElementById('sending-indicator').classList.add('opacity-0');
       document.getElementById('sharing-status-dot').className = "w-2.5 h-2.5 rounded-full bg-slate-400";
 
-      // 画像をクリア
+      // ② 切断時：画像をクリアしてFirestoreを更新
       if (currentUser && currentRoomId && studentId) {
         const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId, 'students', studentId);
         await updateDoc(studentDocRef, {
@@ -787,14 +742,15 @@
     };
 
     // --- 要求された瞬間のみ1発キャプチャするコア関数 (プル型) ---
-    async function captureAndSendImmediately() {
+    async function captureAndSendImmediately(statusMessage = "送信しました！") {
       const video = document.getElementById('capture-video');
       const canvas = document.getElementById('capture-canvas');
       const previewImg = document.getElementById('local-preview-img');
       const indicator = document.getElementById('sending-indicator');
+      const indicatorText = document.getElementById('indicator-text');
 
       if (!localStream) {
-        // 共有開始していない場合は何もしない（教員側には「応答待ち」または「切断」が表示される）
+        // 共有開始していない場合は何もしない
         return;
       }
 
@@ -818,17 +774,17 @@
           previewImg.classList.remove('hidden');
 
           // インジケーター表示
+          if (indicatorText) indicatorText.innerText = statusMessage;
           indicator.className = "absolute top-3 right-3 bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-full flex items-center gap-1.5 opacity-100";
           setTimeout(() => {
             indicator.classList.add('opacity-0');
           }, 2500);
 
-          // Firestoreに画像を1枚だけアップロード（②先生のボタン押下への応答）
+          // Firestoreに画像を1枚だけアップロード
           const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId, 'students', studentId);
           await updateDoc(studentDocRef, {
             screenImage: base64Image,
-            updatedAt: new Date().toISOString(),
-            lastSeen: new Date().toISOString()
+            updatedAt: new Date().toISOString()
           });
         }
       } catch (err) {
@@ -836,13 +792,14 @@
       }
     }
 
+    // ② 退出時もクリア処理を入れておく
     window.leaveRoom = async function() {
-      if (pulseInterval) clearInterval(pulseInterval);
       if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
       }
       if (currentRoomId && studentId) {
         const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId, 'students', studentId);
+        // ドキュメントそのものを削除することで切断扱いにする
         await deleteDoc(studentDocRef);
       }
       location.reload();
