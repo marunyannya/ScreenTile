@@ -12,6 +12,18 @@
     /* アニメーション用 */
     .fade-in { animation: fadeIn 0.3s ease-out; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    /* video要素を停止させずに隠すためのスタイル */
+    .invisible-video {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1px;
+      height: 1px;
+      opacity: 0.01;
+      pointer-events: none;
+      z-index: -10;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
@@ -25,7 +37,7 @@
         </div>
         <div>
           <h1 class="text-xl font-bold tracking-tight text-slate-900">Custom TFabTile</h1>
-          <p class="text-xs text-slate-500">リアルタイム画面共有＆監視システム (スタンドアロン版)</p>
+          <p class="text-xs text-slate-500">リアルタイム画面共有＆監視システム (スタンドアロン版 V2)</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
@@ -122,8 +134,8 @@
                 <i data-lucide="alert-triangle" class="w-5 h-5"></i>
               </div>
               <div class="flex-grow">
-                <h3 class="text-base font-bold text-amber-950 mb-1">所定の作業以外をしている可能性のある学生</h3>
-                <p class="text-sm text-amber-800 mb-3">画面共有ページから離脱した、または別タブ・別ウインドウに切り替えた学生を検知しています。</p>
+                <h3 class="text-base font-bold text-amber-950 mb-1">別タブを開いている可能性のある学生</h3>
+                <p class="text-sm text-amber-800 mb-3">画面共有ページから離脱し、別のブラウザタブ（YouTube等）に切り替えている学生を検知しています。</p>
                 <div id="alert-student-list" class="flex flex-wrap gap-2"></div>
               </div>
             </div>
@@ -215,13 +227,14 @@
                 教員からの確認・セキュリティ動作について
               </h3>
               <p class="text-xs text-slate-500 leading-relaxed">
-                授業中は、このページ（タブ）を開いたままにしてください。他タブへ移動したり、ブラウザを最小化したりすると、教員側に警告（所定作業外の検知）が表示されます。
+                授業中は、このページ（タブ）を開いたままにしてください。他タブ（YouTube等）へ移動すると教員側に警告が表示されますが、**WordやExcel、他の別アプリを操作するために画面を切り替えることは全く問題ありません。**
               </p>
             </div>
 
             <!-- 共有プレビュー表示 -->
             <div class="relative bg-slate-900 rounded-xl overflow-hidden aspect-video flex items-center justify-center">
-              <video id="capture-video" autoplay playsinline muted class="w-full h-full object-contain hidden"></video>
+              <!-- ブラウザ停止を防ぐため、物理的に隠さずCSSで見えなくする -->
+              <video id="capture-video" autoplay playsinline muted class="invisible-video"></video>
               <canvas id="capture-canvas" class="hidden"></canvas>
               
               <!-- 画像の最終送信を静止画表示 -->
@@ -275,7 +288,7 @@
             <i data-lucide="alert-triangle" class="w-8 h-8"></i>
           </div>
           <p class="text-white text-lg font-bold mb-1">注意: 学生が別作業をしている可能性があります</p>
-          <p class="text-red-300 text-sm max-w-md">共有元のタブ・ブラウザ画面からフォーカスが外れています。</p>
+          <p class="text-red-300 text-sm max-w-md">共有元のタブから離脱し、別のタブを開いています。</p>
         </div>
       </div>
       <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-xs text-slate-500">
@@ -308,15 +321,14 @@
       firebaseConfig = JSON.parse(__firebase_config);
     } else {
       // 2. ★ご自身のFirebaseコンソールから取得した設定値に書き換えてください★
-      // ここを書き換えることで、GASやローカル環境などどこでも単体で動くようになります。
       firebaseConfig = {
-  apiKey: "AIzaSyC6fDndKJhPLO5qfYs_491NePjp_avGMfw",
-  authDomain: "tfabtileclone.firebaseapp.com",
-  projectId: "tfabtileclone",
-  storageBucket: "tfabtileclone.firebasestorage.app",
-  messagingSenderId: "53819058486",
-  appId: "1:53819058486:web:280c4feb48a24c0e4e6b97",
-  measurementId: "G-EHXF6BVKYK"
+        apiKey: "AIzaSyC6fDndKJhPLO5qfYs_491NePjp_avGMfw",
+        authDomain: "tfabtileclone.firebaseapp.com",
+        projectId: "tfabtileclone",
+        storageBucket: "tfabtileclone.firebasestorage.app",
+        messagingSenderId: "53819058486",
+        appId: "1:53819058486:web:280c4feb48a24c0e4e6b97",
+        measurementId: "G-EHXF6BVKYK"
       };
     }
 
@@ -362,7 +374,7 @@
         }
       } catch (error) {
         console.error("Authentication Error: ", error);
-        showCustomAlert("認証エラーが発生しました。Firebaseの設定（特に「Anonymous Authentication(匿名認証)」の有効化）を確認してください。");
+        showCustomAlert("認証エラーが発生しました。Firebaseの設定を確認してください。");
       }
     };
 
@@ -468,8 +480,8 @@
         tile.onclick = () => zoomStudentTile(student);
 
         const lastUpdatedText = getRelativeTime(student.updatedAt);
-        const focusClass = student.isTabActive ? 'bg-emerald-500' : 'bg-red-500 animate-ping';
-        const focusLabel = student.isTabActive ? '所定の画面' : '作業外の可能性あり';
+        const focusClass = student.isTabActive ? 'bg-emerald-500' : 'bg-red-500 animate-pulse';
+        const focusLabel = student.isTabActive ? '作業中 (または共有中)' : '別タブ離脱の可能性';
         const focusLabelColor = student.isTabActive ? 'text-slate-500' : 'text-red-500 font-bold';
 
         tile.innerHTML = `
@@ -521,12 +533,12 @@
       if (student.isTabActive) {
         warning.classList.add('hidden');
         statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
-        focusStatus.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i> 現在この学生は共有画面を開いています`;
+        focusStatus.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i> 現在この学生は共有画面、または他の作業アプリを開いています`;
         focusStatus.className = "flex items-center gap-1.5 font-medium text-emerald-600";
       } else {
         warning.classList.remove('hidden');
         statusDot.className = "w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse";
-        focusStatus.innerHTML = `<i data-lucide="alert-triangle" class="w-4 h-4 text-red-500"></i> 学生が画面から離脱、または別のウィンドウを開いています`;
+        focusStatus.innerHTML = `<i data-lucide="alert-triangle" class="w-4 h-4 text-red-500"></i> 学生が別のブラウザタブ（YouTubeなど）に移動しています`;
         focusStatus.className = "flex items-center gap-1.5 font-medium text-red-600 animate-pulse";
       }
 
@@ -618,7 +630,9 @@
 
         video.srcObject = localStream;
         document.getElementById('video-placeholder').classList.add('hidden');
-        video.classList.remove('hidden');
+        
+        // 注: video要素は display: none ではなく、CSSで画面外配置（1px, opacity 0.01）にすることで、ブラウザが再生を止めるのを防ぎます。
+        // これにより、5秒ごとの更新が完全に安定して動きます。
 
         startBtn.innerHTML = `<i data-lucide="stop-circle" class="w-5 h-5"></i> 画面共有を停止する`;
         startBtn.className = "w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2";
@@ -650,7 +664,6 @@
 
       const video = document.getElementById('capture-video');
       video.srcObject = null;
-      video.classList.add('hidden');
       document.getElementById('local-preview-img').classList.add('hidden');
       document.getElementById('video-placeholder').classList.remove('hidden');
 
@@ -678,7 +691,7 @@
       const previewImg = document.getElementById('local-preview-img');
       const indicator = document.getElementById('sending-indicator');
 
-      if (!localStream || video.paused || video.ended) return;
+      if (!localStream) return;
 
       const context = canvas.getContext('2d');
       const targetWidth = 480;
@@ -693,7 +706,6 @@
 
         previewImg.src = base64Image;
         previewImg.classList.remove('hidden');
-        video.classList.add('hidden'); 
 
         indicator.classList.remove('opacity-0');
         setTimeout(() => indicator.classList.add('opacity-0'), 1500);
@@ -711,18 +723,11 @@
 
     // --- ブラウザフォーカス検知 ---
     function initTabVisibilityDetection() {
+      // 授業タブ以外の別タブ（例: YouTube等）に「切り替えたとき」のみ作業外とみなします。
+      // WordやExcelなどの別ウィンドウを操作するためにこのブラウザが「非アクティブ」になっても、
+      // 正常な作業中として「警告対象外」にできるよう、windowの blur / focus イベントの検知は廃止しました。
       document.addEventListener("visibilitychange", () => {
         isTabActive = !document.hidden;
-        reportStatus();
-      });
-
-      window.addEventListener("blur", () => {
-        isTabActive = false;
-        reportStatus();
-      });
-
-      window.addEventListener("focus", () => {
-        isTabActive = true;
         reportStatus();
       });
     }
