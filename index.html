@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TFabTile 自作クローン (オンデマンド・プル型 V6.3)</title>
+  <title>TFabTile 自作クローン (オンデマンド・プル型 V6.4)</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
@@ -36,13 +36,13 @@
         </div>
         <div>
           <h1 class="text-xl font-bold tracking-tight text-slate-900">On-Demand TFabTile</h1>
-          <p class="text-xs text-slate-500">教員リクエスト駆動・超低燃費モデル (V6.3 Secure)</p>
+          <p class="text-xs text-slate-500">教員リクエスト駆動・超低燃費モデル (V6.4 Secure-Pull)</p>
         </div>
       </div>
       <div class="flex items-center gap-3">
         <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          認証セキュリティ有効
+          セキュア・プル同期システム稼働中
         </span>
       </div>
     </div>
@@ -61,7 +61,7 @@
       <div id="role-selection" class="hidden max-w-2xl mx-auto py-12">
         <div class="text-center mb-10">
           <h2 class="text-3xl font-extrabold text-slate-900 mb-2">どちらで利用しますか？</h2>
-          <p class="text-slate-500">V6.3ではFirebase認証に基づくセキュリティを実装。不正な外部書き込みを強力に防止しています。</p>
+          <p class="text-slate-500">V6.4では、教員がルーム側に指令を出し、生徒自身が応答する安全な「完全プル型同期」を採用しています。</p>
         </div>
 
         <div class="grid md:grid-cols-2 gap-6">
@@ -107,7 +107,7 @@
           <div>
             <div class="flex items-center gap-2 text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-1">
               <span class="w-2 h-2 rounded-full bg-indigo-600"></span>
-              Teacher Panel (V6.3 On-Demand)
+              Teacher Panel (V6.4 On-Demand)
             </div>
             <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <h2 class="text-2xl font-bold text-slate-900">オンデマンド画面監視</h2>
@@ -284,7 +284,7 @@
 
   <footer class="bg-white border-t border-slate-100 py-6 mt-12 text-center text-xs text-slate-400">
     <div class="max-w-7xl mx-auto px-4">
-      <p>&copy; 2026 Eco TFabTile On-Demand System (V6.3 Secure)</p>
+      <p>&copy; 2026 Eco TFabTile On-Demand System (V6.4 Secure-Pull)</p>
     </div>
   </footer>
 
@@ -332,7 +332,8 @@
     let studentId = null; 
     let localStream = null;
 
-    let lastRequestToken = ""; // 学生側で前回処理した撮影要求トークン
+    let lastAllRequestToken = ""; // 学生側で前回処理した全体要求トークン
+    let lastSingleRequestToken = ""; // 学生側で前回処理した個別要求トークン
 
     const initAuth = async () => {
       try {
@@ -367,6 +368,7 @@
         document.getElementById('teacher-room-id').innerText = currentRoomId;
         
         await initializeRoomOnDb(currentRoomId);
+        startListeningToRoom(currentRoomId); // 自分が作成したルームの合図（フラグ）情報を監視
         startListeningToStudents(currentRoomId);
       } else {
         document.getElementById('student-view').classList.remove('hidden');
@@ -380,14 +382,35 @@
       await setDoc(roomRef, {
         createdAt: new Date().toISOString(),
         hostId: currentUser.uid,
-        status: 'active'
+        status: 'active',
+        requestTriggerAll: "", // 全体取得用の合図
+        requestTimeAll: "",
+        requestTarget: "",    // 個別取得用のターゲット生徒ID
+        requestTriggerSingle: "", // 個別取得用の合図
+        requestTimeSingle: ""
       }, { merge: true });
     }
 
     let unsubscribeStudents = null;
+    let unsubscribeRoom = null;
     let localStudentsData = []; // 現在の全生徒データをキャッシュ
+    let currentRoomData = null; // 現在のルーム状況データをキャッシュ
 
-    // 授業に参加している学生のリアルタイム監視 (Rule 1 & Rule 2対応フラット監視)
+    // 教員側：ルームの状態変更（リクエスト発行時のタイムスタンプ等）を監視する
+    function startListeningToRoom(roomId) {
+      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
+      unsubscribeRoom = onSnapshot(roomRef, (docSnap) => {
+        if (docSnap.exists()) {
+          currentRoomData = docSnap.data();
+          // リクエストタイムスタンプが変わったら、生徒一覧の「応答待ち」表示を更新
+          updateTilesGrid(localStudentsData);
+        }
+      }, (error) => {
+        console.error("Room Listen error:", error);
+      });
+    }
+
+    // 授業に参加している学生のリアルタイム監視 (フラット構造監視)
     function startListeningToStudents(roomId) {
       if (!currentUser) return;
       
@@ -397,7 +420,6 @@
         const students = [];
         snapshot.forEach((doc) => {
           const data = doc.data();
-          // メモリ内で該当するルームの学生だけにフィルタリング (Rule 2 遵守)
           if (data.roomId === roomId) {
             students.push({ id: doc.id, ...data });
           }
@@ -413,11 +435,11 @@
           }
         }
       }, (error) => {
-        console.error("Firestore List error:", error);
+        console.error("Students List error:", error);
       });
     }
 
-    // --- 教員：全員に画面キャプチャ要求を送信 ---
+    // --- 教員：全員に画面キャプチャ要求を送信 (ルーム側のフラグを更新) ---
     window.requestCaptureAll = async function() {
       if (!currentUser || !currentRoomId) return;
       
@@ -427,21 +449,18 @@
       lucide.createIcons();
 
       try {
-        const newToken = "REQ-" + Date.now();
+        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
         
-        // メモリ内で一致したすべての学生のドキュメントを更新
-        for (const student of localStudentsData) {
-          const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', student.id);
-          await updateDoc(studentDocRef, {
-            requestTrigger: newToken,
-            requestTime: new Date().toISOString()
-          });
-        }
+        // ルームの共通指令を更新（セキュリティルールで教員の書き込みが100%許可されているため安全です）
+        await updateDoc(roomRef, {
+          requestTriggerAll: "REQ-" + Date.now(),
+          requestTimeAll: new Date().toISOString()
+        });
         
         showCustomAlert("全員に画面更新リクエストを送信しました！");
       } catch (err) {
         console.error("要求送信エラー:", err);
-        showCustomAlert("リクエスト送信に失敗しました。");
+        showCustomAlert("リクエスト送信に失敗しました。原因: " + err.message);
       } finally {
         setTimeout(() => {
           btn.disabled = false;
@@ -451,7 +470,7 @@
       }
     };
 
-    // --- 教員：個別学生に画面キャプチャ要求を送信 ---
+    // --- 教員：個別学生に画面キャプチャ要求を送信 (ルーム側のフラグを更新) ---
     async function requestCaptureSingle(studentIdToReq) {
       if (!currentUser || !currentRoomId) return;
       
@@ -459,12 +478,13 @@
       if (modalOverlay) modalOverlay.classList.remove('hidden');
 
       try {
-        const newToken = "REQ-SINGLE-" + Date.now();
-        const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentIdToReq);
+        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
         
-        await updateDoc(studentDocRef, {
-          requestTrigger: newToken,
-          requestTime: new Date().toISOString()
+        // 特定の学生を狙い撃ちするフラグに変更
+        await updateDoc(roomRef, {
+          requestTarget: studentIdToReq,
+          requestTriggerSingle: "REQ-SINGLE-" + Date.now(),
+          requestTimeSingle: new Date().toISOString()
         });
         
       } catch (err) {
@@ -501,9 +521,19 @@
         tile.className = 'student-tile bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition duration-200 flex flex-col cursor-pointer';
         tile.onclick = () => zoomStudentTile(student);
 
-        const reqTime = student.requestTime ? new Date(student.requestTime) : null;
+        // 応答待ち判定のロジック:
+        // ルーム側が最後に出したリクエスト時刻が、生徒側の画像更新時刻（updatedAt）より新しければ「応答待ち」を表示
+        const reqTimeAll = (currentRoomData && currentRoomData.requestTimeAll) ? new Date(currentRoomData.requestTimeAll) : null;
+        const reqTimeSingle = (currentRoomData && currentRoomData.requestTarget === student.id && currentRoomData.requestTimeSingle) ? new Date(currentRoomData.requestTimeSingle) : null;
+        
+        let latestReqTime = null;
+        if (reqTimeAll) latestReqTime = reqTimeAll;
+        if (reqTimeSingle && (!latestReqTime || reqTimeSingle > latestReqTime)) {
+          latestReqTime = reqTimeSingle;
+        }
+
         const updTime = student.updatedAt ? new Date(student.updatedAt) : null;
-        const isWaitingResponse = reqTime && (!updTime || updTime < reqTime) && (now - reqTime < 8000);
+        const isWaitingResponse = latestReqTime && (!updTime || updTime < latestReqTime) && (now - latestReqTime < 8000);
 
         const lastUpdatedText = getRelativeTime(student.updatedAt);
         const hasImage = student.screenImage && student.screenImage.trim() !== "";
@@ -600,7 +630,7 @@
       }, 200);
     };
 
-    // --- 学生：ルームに参加 (フラット構造への登録 & エラーハンドリング強化) ---
+    // --- 学生：ルームに参加 ---
     window.joinRoom = async function() {
       try {
         const nameInput = document.getElementById('student-name-input').value.trim();
@@ -621,7 +651,6 @@
         }
 
         currentRoomId = roomInput;
-        // studentId は認証を通過した currentUser の一意なUIDを使うため安全です
         studentId = currentUser.uid; 
 
         // 1. ルームが存在するか検証
@@ -641,7 +670,7 @@
         document.getElementById('active-student-display-name').innerText = nameInput;
         document.getElementById('active-room-display-id').innerText = currentRoomId;
 
-        // 3. フラットな 'students' コレクションに参加情報を書き込む (Rule 1 & Firebase規則準拠)
+        // 3. フラットな 'students' コレクションに参加情報を書き込む
         const myDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
         
         await setDoc(myDocRef, {
@@ -649,13 +678,12 @@
           name: nameInput,
           joinedAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          requestTrigger: "",
           screenImage: ""
         }, { merge: true });
 
         document.getElementById('sharing-status-dot').className = "w-2.5 h-2.5 rounded-full bg-slate-400";
         
-        // 4. 学生側のリスナー：先生から撮影リクエストが届いたか監視する
+        // 4. 学生側のリスナー：所属するルーム自体の更新情報（教員からのフラグ）を監視する
         listenForTeacherRequests();
 
         lucide.createIcons();
@@ -665,20 +693,25 @@
       }
     };
 
-    // 教員からの撮影要求を検知する
+    // 教員からの撮影要求を検知する（監視対象をルーム自体の更新に変更）
     function listenForTeacherRequests() {
       if (!currentUser || !currentRoomId || !studentId) return;
-      const myDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
+      const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
 
-      onSnapshot(myDocRef, (docSnap) => {
+      onSnapshot(roomRef, (docSnap) => {
         if (!docSnap.exists()) return;
         const data = docSnap.data();
         
-        // 撮影要求トークンが更新されているかチェック
-        if (data.requestTrigger && data.requestTrigger !== lastRequestToken) {
-          lastRequestToken = data.requestTrigger;
-          // ③ 教員から要求があった瞬間の撮影・送信
-          captureAndSendImmediately("先生からの要求で画面キャプチャを送信しました！");
+        // ① 全体要求トークンの更新チェック
+        if (data.requestTriggerAll && data.requestTriggerAll !== lastAllRequestToken) {
+          lastAllRequestToken = data.requestTriggerAll;
+          captureAndSendImmediately("先生からの全体要求で画面キャプチャを送信しました！");
+        }
+        
+        // ② 個別要求（ターゲットが自分自身である場合）のトークン更新チェック
+        if (data.requestTarget === studentId && data.requestTriggerSingle && data.requestTriggerSingle !== lastSingleRequestToken) {
+          lastSingleRequestToken = data.requestTriggerSingle;
+          captureAndSendImmediately("先生からの個別要求で画面キャプチャを送信しました！");
         }
       }, (err) => {
         console.error("Request listen error:", err);
@@ -798,7 +831,7 @@
             indicator.classList.add('opacity-0');
           }, 2500);
 
-          // Firestoreに画像を1枚だけアップロード
+          // Firestoreに画像を1枚だけアップロード（自分がオーナーなので確実に成功します）
           const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
           await updateDoc(studentDocRef, {
             screenImage: base64Image,
@@ -810,11 +843,13 @@
       }
     }
 
-    // ② 退出時もクリア処理を入れておく
+    // ② 退出時
     window.leaveRoom = async function() {
       if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
       }
+      if (unsubscribeRoom) unsubscribeRoom();
+      if (unsubscribeStudents) unsubscribeStudents();
       if (currentRoomId && studentId) {
         try {
           const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
