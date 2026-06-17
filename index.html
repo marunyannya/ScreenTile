@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TFabTile 自作クローン (画面共有一覧システム V3)</title>
+  <title>TFabTile 自作クローン (画面共有一覧システム V4)</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
@@ -42,7 +42,7 @@
         </div>
         <div>
           <h1 class="text-xl font-bold tracking-tight text-slate-900">Custom TFabTile</h1>
-          <p class="text-xs text-slate-500">リアルタイム画面共有＆監視システム (高安定化 V3)</p>
+          <p class="text-xs text-slate-500">リアルタイム画面共有＆監視システム (不具合修正 V4)</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
@@ -197,7 +197,7 @@
         <div id="student-active-panel" class="hidden bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
           <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
             <div class="flex items-center gap-3">
-              <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+              <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse animate-duration-1000" id="sharing-status-dot"></div>
               <div>
                 <h2 class="text-lg font-bold text-slate-900" id="active-student-display-name">山田 太郎</h2>
                 <p class="text-xs text-slate-500">ルーム <span id="active-room-display-id" class="font-bold text-indigo-600 font-mono">------</span> に参加中</p>
@@ -216,8 +216,8 @@
                 画面共有の開始手順
               </h3>
               <p class="text-xs text-slate-500 leading-relaxed">
-                「画面共有を開始する」ボタンを押し、共有したい画面（アプリケーションのウィンドウ、または画面全体）を選択してください。
-                開始後は、WordやExcel、他のアプリを開いてそのまま作業して大丈夫です。画面は自動的に5秒間隔でバックグラウンド送信されます。
+                「画面共有を開始する」ボタンを押し、共有したい画面を選択してください。
+                開始後は、ブラウザを最小化したり他のアプリを開いて作業しても、5秒間隔で自動送信され続けます。
               </p>
             </div>
 
@@ -290,7 +290,7 @@
   <!-- フッター -->
   <footer class="bg-white border-t border-slate-100 py-6 mt-12 text-center text-xs text-slate-400">
     <div class="max-w-7xl mx-auto px-4">
-      <p>&copy; 2026 Custom TFabTile System. (Web Worker バックグラウンドタイマー搭載版)</p>
+      <p>&copy; 2026 Custom TFabTile System. (Web Worker バックグラウンドタイマー搭載版 V4)</p>
     </div>
   </footer>
 
@@ -439,6 +439,14 @@
         });
         
         updateTilesGrid(students);
+        
+        // アクティブなズームモーダルのデータ更新
+        if (activeZoomStudentId) {
+          const currentZoomStudent = students.find(s => s.id === activeZoomStudentId);
+          if (currentZoomStudent) {
+            updateZoomModalUI(currentZoomStudent);
+          }
+        }
       }, (error) => {
         console.error("Firestore Listen Error: ", error);
       });
@@ -468,14 +476,19 @@
         tile.onclick = () => zoomStudentTile(student);
 
         const lastUpdatedText = getRelativeTime(student.updatedAt);
+        
+        // 厳密に screenImage が定義され、かつ空文字列でない場合のみ画像描画
+        const hasImage = student.screenImage && student.screenImage.trim() !== "";
 
         tile.innerHTML = `
           <div class="relative aspect-video bg-slate-900 flex items-center justify-center overflow-hidden">
-            ${student.screenImage ? 
+            ${hasImage ? 
               `<img src="${student.screenImage}" class="w-full h-full object-contain" alt="${escapeHTML(student.name)}の画面">` : 
-              `<div class="text-slate-500 flex flex-col items-center gap-1">
-                <i data-lucide="image" class="w-8 h-8 opacity-40"></i>
-                <span class="text-xs">画面未送信</span>
+              `<div class="text-slate-500 flex flex-col items-center gap-1.5 p-4 text-center">
+                <div class="p-2 bg-slate-800 rounded-full text-slate-600">
+                  <i data-lucide="monitor-off" class="w-6 h-6"></i>
+                </div>
+                <span class="text-xs font-medium text-slate-500">画面未送信 (停止中)</span>
                </div>`
             }
           </div>
@@ -499,21 +512,32 @@
       activeZoomStudentId = student.id;
       
       const modal = document.getElementById('zoom-modal');
+      modal.classList.remove('hidden');
+      
+      updateZoomModalUI(student);
+
+      setTimeout(() => {
+        modal.classList.add('opacity-100');
+      }, 50);
+    };
+
+    function updateZoomModalUI(student) {
       const img = document.getElementById('modal-image');
       const name = document.getElementById('modal-student-name');
       const lastUpdated = document.getElementById('modal-last-updated');
 
       name.innerText = student.name;
       lastUpdated.innerText = `最終更新: ${getRelativeTime(student.updatedAt)}`;
-      img.src = student.screenImage || '';
-
-      modal.classList.remove('hidden');
-      setTimeout(() => {
-        modal.classList.add('opacity-100');
-      }, 50);
       
-      lucide.createIcons();
-    };
+      const hasImage = student.screenImage && student.screenImage.trim() !== "";
+      if (hasImage) {
+        img.src = student.screenImage;
+        img.classList.remove('hidden');
+      } else {
+        img.src = '';
+        img.classList.add('hidden');
+      }
+    }
 
     window.closeZoomModal = function() {
       const modal = document.getElementById('zoom-modal');
@@ -556,12 +580,15 @@
       document.getElementById('active-student-display-name').innerText = nameInput;
       document.getElementById('active-room-display-id').innerText = currentRoomId;
 
-      await syncStudentState({
+      // 最初の参加時には screenImage を絶対に設定しない（割れ画像対策）
+      await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId, 'students', studentId), {
         name: nameInput,
         joinedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        screenImage: ""
-      });
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+
+      // ステータスを「接続中(未送信)」にする
+      document.getElementById('sharing-status-dot').className = "w-2.5 h-2.5 rounded-full bg-slate-400";
 
       lucide.createIcons();
     };
@@ -598,6 +625,9 @@
         startBtn.className = "w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2";
         startBtn.onclick = stopScreenShare;
 
+        // ステータスを「共有中(緑色に点滅)」にする
+        document.getElementById('sharing-status-dot').className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse animate-duration-1000";
+
         startCaptureLoop();
 
         localStream.getVideoTracks()[0].onended = () => {
@@ -611,7 +641,8 @@
       lucide.createIcons();
     };
 
-    function stopScreenShare() {
+    // 画面共有の停止処理（データベースへの空データ同期を保証）
+    window.stopScreenShare = async function() {
       stopCaptureLoop();
 
       if (localStream) {
@@ -631,8 +662,17 @@
 
       document.getElementById('sending-indicator').classList.add('opacity-0');
       
+      // ステータスを「停止中(グレー)」にする
+      document.getElementById('sharing-status-dot').className = "w-2.5 h-2.5 rounded-full bg-slate-400";
+
+      // データベース上の画面をクリアし、教師側に停止を即座に知らせる
+      await syncStudentState({
+        screenImage: "", // 空文字列に書き換える
+        updatedAt: new Date().toISOString()
+      });
+
       lucide.createIcons();
-    }
+    };
 
     // --- Web Workerを使用した安定タイマーの開始 ---
     function startCaptureLoop() {
@@ -644,8 +684,10 @@
       // Web Workerを初期化
       timerWorker = new Worker(workerUrl);
       
-      // 最初の一回目のキャプチャを即時実行
-      captureAndSend();
+      // 最初のキャプチャはvideoの再生開始準備が少し安定するのを待ってから（200ms後）実行（割れ画像対策）
+      setTimeout(() => {
+        captureAndSend();
+      }, 200);
 
       // Workerからの定期通知(5秒毎)を受けてキャプチャを実行
       timerWorker.onmessage = function(e) {
@@ -687,29 +729,34 @@
       canvas.height = targetHeight;
 
       try {
-        context.drawImage(video, 0, 0, targetWidth, targetHeight);
-        // jpeg品質を0.4に圧縮して通信量とデータベース書き込みを最適化
-        const base64Image = canvas.toDataURL('image/jpeg', 0.4);
+        // ビデオの読み込み準備が整っている場合のみ描画する
+        if (video.readyState >= 2) {
+          context.drawImage(video, 0, 0, targetWidth, targetHeight);
+          // jpeg品質を0.4に圧縮して通信量とデータベース書き込みを最適化
+          const base64Image = canvas.toDataURL('image/jpeg', 0.4);
 
-        previewImg.src = base64Image;
-        previewImg.classList.remove('hidden');
+          previewImg.src = base64Image;
+          previewImg.classList.remove('hidden');
 
-        // 同期中インジケータをチラつかせる
-        indicator.classList.remove('opacity-0');
-        setTimeout(() => indicator.classList.add('opacity-0'), 1500);
+          // 同期中インジケータをチラつかせる
+          indicator.classList.remove('opacity-0');
+          setTimeout(() => indicator.classList.add('opacity-0'), 1500);
 
-        await syncStudentState({
-          screenImage: base64Image,
-          updatedAt: new Date().toISOString()
-        });
-
+          await syncStudentState({
+            screenImage: base64Image,
+            updatedAt: new Date().toISOString()
+          });
+        }
       } catch (err) {
         console.error("キャプチャ送信エラー:", err);
       }
     }
 
     window.leaveRoom = async function() {
-      stopScreenShare();
+      stopCaptureLoop();
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+      }
       if (currentRoomId && studentId) {
         const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId, 'students', studentId);
         await deleteDoc(studentDocRef);
@@ -725,7 +772,7 @@
       const diffMs = now - date;
       const diffSec = Math.floor(diffMs / 1000);
 
-      if (diffSec < 10) return "たった今";
+      if (diffSec < 5) return "たった今";
       if (diffSec < 60) return `${diffSec}秒前`;
       
       const min = date.getMinutes().toString().padStart(2, '0');
