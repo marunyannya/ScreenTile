@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TFabTile 自作クローン (画面共有一覧システム)</title>
+  <title>TFabTile 自作クローン (画面共有一覧システム V3)</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
@@ -13,16 +13,21 @@
     .fade-in { animation: fadeIn 0.3s ease-out; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-    /* video要素を停止させずに隠すためのスタイル */
-    .invisible-video {
+    /* video要素を確実に再生させ続けるためのスタイル */
+    .hidden-video-container {
       position: absolute;
       top: 0;
       left: 0;
       width: 1px;
       height: 1px;
-      opacity: 0.01;
+      overflow: hidden;
+      opacity: 0.001;
       pointer-events: none;
-      z-index: -10;
+      z-index: -100;
+    }
+    video {
+      width: 100%;
+      height: 100%;
     }
   </style>
 </head>
@@ -37,7 +42,7 @@
         </div>
         <div>
           <h1 class="text-xl font-bold tracking-tight text-slate-900">Custom TFabTile</h1>
-          <p class="text-xs text-slate-500">リアルタイム画面共有＆監視システム (スタンドアロン版 V2)</p>
+          <p class="text-xs text-slate-500">リアルタイム画面共有＆監視システム (高安定化 V3)</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
@@ -116,29 +121,13 @@
               <h2 class="text-2xl font-bold text-slate-900">ルーム監視画面</h2>
               <span class="text-slate-500 text-sm">ルームID: <strong id="teacher-room-id" class="text-indigo-600 font-mono text-lg select-all">------</strong></span>
             </div>
-            <p class="text-slate-500 text-sm mt-1">学生にこのルームIDを共有してください。接続中の学生の画面が5秒ごとに自動更新されます。</p>
+            <p class="text-slate-500 text-sm mt-1">学生にこのルームIDを共有してください。学生の画面が5秒ごとに自動更新されます。</p>
           </div>
           <div class="flex flex-wrap gap-2 w-full md:w-auto">
             <button onclick="location.reload()" class="flex-1 md:flex-initial bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2.5 px-4 rounded-xl transition text-sm flex items-center justify-center gap-2">
               <i data-lucide="log-out" class="w-4 h-4"></i>
               ロール選択に戻る
             </button>
-          </div>
-        </div>
-
-        <!-- 危険警告アラート -->
-        <div id="alert-section" class="mb-6 hidden">
-          <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5">
-            <div class="flex items-start gap-3">
-              <div class="p-2 bg-amber-100 text-amber-800 rounded-lg shrink-0">
-                <i data-lucide="alert-triangle" class="w-5 h-5"></i>
-              </div>
-              <div class="flex-grow">
-                <h3 class="text-base font-bold text-amber-950 mb-1">別タブを開いている可能性のある学生</h3>
-                <p class="text-sm text-amber-800 mb-3">画面共有ページから離脱し、別のブラウザタブ（YouTube等）に切り替えている学生を検知しています。</p>
-                <div id="alert-student-list" class="flex flex-wrap gap-2"></div>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -223,18 +212,22 @@
           <div class="space-y-6">
             <div class="p-4 bg-slate-50 border border-slate-100 rounded-xl">
               <h3 class="text-sm font-bold text-slate-800 mb-1 flex items-center gap-1.5">
-                <i data-lucide="shield-alert" class="w-4 h-4 text-slate-500"></i>
-                教員からの確認・セキュリティ動作について
+                <i data-lucide="info" class="w-4 h-4 text-slate-500"></i>
+                画面共有の開始手順
               </h3>
               <p class="text-xs text-slate-500 leading-relaxed">
-                授業中は、このページ（タブ）を開いたままにしてください。他タブ（YouTube等）へ移動すると教員側に警告が表示されますが、**WordやExcel、他の別アプリを操作するために画面を切り替えることは全く問題ありません。**
+                「画面共有を開始する」ボタンを押し、共有したい画面（アプリケーションのウィンドウ、または画面全体）を選択してください。
+                開始後は、WordやExcel、他のアプリを開いてそのまま作業して大丈夫です。画面は自動的に5秒間隔でバックグラウンド送信されます。
               </p>
             </div>
 
             <!-- 共有プレビュー表示 -->
             <div class="relative bg-slate-900 rounded-xl overflow-hidden aspect-video flex items-center justify-center">
-              <!-- ブラウザ停止を防ぐため、物理的に隠さずCSSで見えなくする -->
-              <video id="capture-video" autoplay playsinline muted class="invisible-video"></video>
+              
+              <!-- ブラウザ停止を防ぐため、物理コンテナの中にvideo要素を配置 -->
+              <div class="hidden-video-container">
+                <video id="capture-video" autoplay playsinline muted></video>
+              </div>
               <canvas id="capture-canvas" class="hidden"></canvas>
               
               <!-- 画像の最終送信を静止画表示 -->
@@ -243,13 +236,13 @@
               <div id="video-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-slate-400">
                 <i data-lucide="monitor-off" class="w-12 h-12 mb-3 text-slate-600 animate-pulse"></i>
                 <p class="font-medium text-slate-200">画面共有が開始されていません</p>
-                <p class="text-xs text-slate-400 max-w-sm mt-1">下のボタンを押して共有する画面（ブラウザタブやアプリケーションウィンドウ全体）を選択してください。</p>
+                <p class="text-xs text-slate-400 max-w-sm mt-1">下のボタンを押して共有する画面を選択してください。</p>
               </div>
 
               <!-- 送信中インジケータ -->
               <div id="sending-indicator" class="absolute top-3 right-3 bg-indigo-600 text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1.5 opacity-0 transition-opacity duration-300">
                 <span class="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
-                画面送信中
+                画面同期中
               </div>
             </div>
 
@@ -271,7 +264,7 @@
     <div class="bg-white rounded-2xl max-w-4xl w-full overflow-hidden shadow-2xl flex flex-col" onclick="event.stopPropagation()">
       <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
         <div class="flex items-center gap-2.5">
-          <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" id="modal-status-dot"></div>
+          <div class="w-2.5 h-2.5 rounded-full bg-indigo-500"></div>
           <div>
             <h3 class="font-bold text-slate-900 text-base" id="modal-student-name">学生の画面</h3>
             <p class="text-xs text-slate-500" id="modal-last-updated">最終更新: --:--:--</p>
@@ -283,17 +276,13 @@
       </div>
       <div class="bg-slate-950 aspect-video flex items-center justify-center relative">
         <img id="modal-image" class="w-full h-full object-contain" src="" alt="拡大画面プレビュー">
-        <div id="modal-focus-warning" class="absolute inset-0 bg-red-950/80 flex flex-col items-center justify-center text-center p-6 hidden">
-          <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4">
-            <i data-lucide="alert-triangle" class="w-8 h-8"></i>
-          </div>
-          <p class="text-white text-lg font-bold mb-1">注意: 学生が別作業をしている可能性があります</p>
-          <p class="text-red-300 text-sm max-w-md">共有元のタブから離脱し、別のタブを開いています。</p>
-        </div>
       </div>
       <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-xs text-slate-500">
-        <span id="modal-focus-status" class="flex items-center gap-1.5 font-medium"></span>
-        <span>画像を右クリックして保存、または全画面表示可能です</span>
+        <span class="flex items-center gap-1.5 font-medium text-slate-600">
+          <i data-lucide="info" class="w-4 h-4 text-slate-400"></i>
+          5秒間隔でリアルタイム同期されています
+        </span>
+        <span>画像を右クリックして保存が可能です</span>
       </div>
     </div>
   </div>
@@ -301,7 +290,7 @@
   <!-- フッター -->
   <footer class="bg-white border-t border-slate-100 py-6 mt-12 text-center text-xs text-slate-400">
     <div class="max-w-7xl mx-auto px-4">
-      <p>&copy; 2026 Custom TFabTile System. Firebase / Web RTC Screen Capture API 技術デモ</p>
+      <p>&copy; 2026 Custom TFabTile System. (Web Worker バックグラウンドタイマー搭載版)</p>
     </div>
   </footer>
 
@@ -314,13 +303,11 @@
     // --- Firebase設定の検出とフォールバック処理 ---
     let firebaseConfig = {};
 
-    // 1. 本システム (Canvas環境) の設定をチェック
     const isEnvConfigAvailable = typeof __firebase_config !== 'undefined' && __firebase_config;
     
     if (isEnvConfigAvailable) {
       firebaseConfig = JSON.parse(__firebase_config);
     } else {
-      // 2. ★ご自身のFirebaseコンソールから取得した設定値に書き換えてください★
       firebaseConfig = {
         apiKey: "AIzaSyC6fDndKJhPLO5qfYs_491NePjp_avGMfw",
         authDomain: "tfabtileclone.firebaseapp.com",
@@ -332,7 +319,6 @@
       };
     }
 
-    // プレースホルダーのままで実行された場合に警告を出す
     if (!isEnvConfigAvailable && (!firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith("YOUR_"))) {
       document.getElementById('loading').innerHTML = `
         <div class="p-4 max-w-md bg-red-50 border border-red-200 text-red-800 rounded-xl">
@@ -360,9 +346,30 @@
     let myRole = null; 
     let currentRoomId = null;
     let studentId = null; 
-    let streamInterval = null;
     let localStream = null;
-    let isTabActive = true; 
+
+    // Web Workerオブジェクト
+    let timerWorker = null;
+
+    // Web Worker のインライン生成コード (タブが裏に回っても正確に5秒タイマーを実行するためのもの)
+    const workerCode = `
+      let timer = null;
+      self.onmessage = function(e) {
+        if (e.data === 'start') {
+          if (timer) clearInterval(timer);
+          timer = setInterval(() => {
+            self.postMessage('tick');
+          }, 5000);
+        } else if (e.data === 'stop') {
+          if (timer) {
+            clearInterval(timer);
+            timer = null;
+          }
+        }
+      };
+    `;
+    const workerBlob = new Blob([workerCode], { type: "application/javascript" });
+    const workerUrl = URL.createObjectURL(workerBlob);
 
     // Firebase 認証の初期化
     const initAuth = async () => {
@@ -442,8 +449,6 @@
       const grid = document.getElementById('tiles-grid');
       const noStudentsPlaceholder = document.getElementById('no-students');
       const studentCountBadge = document.getElementById('student-count');
-      const alertSection = document.getElementById('alert-section');
-      const alertStudentList = document.getElementById('alert-student-list');
 
       const currentTiles = grid.querySelectorAll('.student-tile');
       currentTiles.forEach(tile => tile.remove());
@@ -451,28 +456,11 @@
       if (students.length === 0) {
         noStudentsPlaceholder.classList.remove('hidden');
         studentCountBadge.innerText = '0人';
-        alertSection.classList.add('hidden');
         return;
       }
 
       noStudentsPlaceholder.classList.add('hidden');
       studentCountBadge.innerText = `${students.length}人`;
-
-      const distractedStudents = students.filter(s => s.isTabActive === false);
-      if (distractedStudents.length > 0) {
-        alertSection.classList.remove('hidden');
-        alertStudentList.innerHTML = '';
-        distractedStudents.forEach(student => {
-          const badge = document.createElement('span');
-          badge.className = "inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 border border-red-200 rounded-lg text-xs font-bold animate-pulse cursor-pointer";
-          badge.innerHTML = `<i data-lucide="eye-off" class="w-3.5 h-3.5"></i> ${escapeHTML(student.name)}`;
-          badge.onclick = () => zoomStudentTile(student);
-          alertStudentList.appendChild(badge);
-        });
-        lucide.createIcons();
-      } else {
-        alertSection.classList.add('hidden');
-      }
 
       students.forEach(student => {
         const tile = document.createElement('div');
@@ -480,9 +468,6 @@
         tile.onclick = () => zoomStudentTile(student);
 
         const lastUpdatedText = getRelativeTime(student.updatedAt);
-        const focusClass = student.isTabActive ? 'bg-emerald-500' : 'bg-red-500 animate-pulse';
-        const focusLabel = student.isTabActive ? '作業中 (または共有中)' : '別タブ離脱の可能性';
-        const focusLabelColor = student.isTabActive ? 'text-slate-500' : 'text-red-500 font-bold';
 
         tile.innerHTML = `
           <div class="relative aspect-video bg-slate-900 flex items-center justify-center overflow-hidden">
@@ -493,15 +478,10 @@
                 <span class="text-xs">画面未送信</span>
                </div>`
             }
-            <div class="absolute top-2.5 right-2.5 bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full ${focusClass}"></span>
-              <span class="text-[10px] text-white font-medium">${focusLabel}</span>
-            </div>
           </div>
           <div class="p-3 flex justify-between items-center bg-slate-50 border-t border-slate-100">
             <div class="truncate">
               <h4 class="font-bold text-sm text-slate-800 truncate">${escapeHTML(student.name)}</h4>
-              <p class="text-[10px] ${focusLabelColor} truncate">${focusLabel}</p>
             </div>
             <div class="text-right shrink-0">
               <p class="text-[10px] text-slate-400">更新: ${lastUpdatedText}</p>
@@ -522,25 +502,10 @@
       const img = document.getElementById('modal-image');
       const name = document.getElementById('modal-student-name');
       const lastUpdated = document.getElementById('modal-last-updated');
-      const warning = document.getElementById('modal-focus-warning');
-      const statusDot = document.getElementById('modal-status-dot');
-      const focusStatus = document.getElementById('modal-focus-status');
 
       name.innerText = student.name;
       lastUpdated.innerText = `最終更新: ${getRelativeTime(student.updatedAt)}`;
       img.src = student.screenImage || '';
-
-      if (student.isTabActive) {
-        warning.classList.add('hidden');
-        statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
-        focusStatus.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i> 現在この学生は共有画面、または他の作業アプリを開いています`;
-        focusStatus.className = "flex items-center gap-1.5 font-medium text-emerald-600";
-      } else {
-        warning.classList.remove('hidden');
-        statusDot.className = "w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse";
-        focusStatus.innerHTML = `<i data-lucide="alert-triangle" class="w-4 h-4 text-red-500"></i> 学生が別のブラウザタブ（YouTubeなど）に移動しています`;
-        focusStatus.className = "flex items-center gap-1.5 font-medium text-red-600 animate-pulse";
-      }
 
       modal.classList.remove('hidden');
       setTimeout(() => {
@@ -595,11 +560,9 @@
         name: nameInput,
         joinedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        isTabActive: true,
         screenImage: ""
       });
 
-      initTabVisibilityDetection();
       lucide.createIcons();
     };
 
@@ -621,8 +584,8 @@
       try {
         localStream = await navigator.mediaDevices.getDisplayMedia({
           video: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
+            width: { ideal: 960 },
+            height: { ideal: 540 },
             frameRate: { ideal: 5 } 
           },
           audio: false
@@ -630,9 +593,6 @@
 
         video.srcObject = localStream;
         document.getElementById('video-placeholder').classList.add('hidden');
-        
-        // 注: video要素は display: none ではなく、CSSで画面外配置（1px, opacity 0.01）にすることで、ブラウザが再生を止めるのを防ぎます。
-        // これにより、5秒ごとの更新が完全に安定して動きます。
 
         startBtn.innerHTML = `<i data-lucide="stop-circle" class="w-5 h-5"></i> 画面共有を停止する`;
         startBtn.className = "w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2";
@@ -652,10 +612,7 @@
     };
 
     function stopScreenShare() {
-      if (streamInterval) {
-        clearInterval(streamInterval);
-        streamInterval = null;
-      }
+      stopCaptureLoop();
 
       if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
@@ -677,12 +634,36 @@
       lucide.createIcons();
     }
 
+    // --- Web Workerを使用した安定タイマーの開始 ---
     function startCaptureLoop() {
-      if (streamInterval) clearInterval(streamInterval);
+      if (timerWorker) {
+        timerWorker.postMessage('stop');
+        timerWorker.terminate();
+      }
+
+      // Web Workerを初期化
+      timerWorker = new Worker(workerUrl);
+      
+      // 最初の一回目のキャプチャを即時実行
       captureAndSend();
-      streamInterval = setInterval(() => {
-        captureAndSend();
-      }, 5000);
+
+      // Workerからの定期通知(5秒毎)を受けてキャプチャを実行
+      timerWorker.onmessage = function(e) {
+        if (e.data === 'tick') {
+          captureAndSend();
+        }
+      };
+
+      // タイマースタート要求
+      timerWorker.postMessage('start');
+    }
+
+    function stopCaptureLoop() {
+      if (timerWorker) {
+        timerWorker.postMessage('stop');
+        timerWorker.terminate();
+        timerWorker = null;
+      }
     }
 
     async function captureAndSend() {
@@ -694,53 +675,36 @@
       if (!localStream) return;
 
       const context = canvas.getContext('2d');
+      // TFabTile用に画像は軽量化(横480px)
       const targetWidth = 480;
-      const targetHeight = (video.videoHeight / video.videoWidth) * targetWidth;
+      
+      let targetHeight = 270; 
+      if (video.videoWidth && video.videoHeight) {
+        targetHeight = (video.videoHeight / video.videoWidth) * targetWidth;
+      }
 
       canvas.width = targetWidth;
       canvas.height = targetHeight;
 
       try {
         context.drawImage(video, 0, 0, targetWidth, targetHeight);
+        // jpeg品質を0.4に圧縮して通信量とデータベース書き込みを最適化
         const base64Image = canvas.toDataURL('image/jpeg', 0.4);
 
         previewImg.src = base64Image;
         previewImg.classList.remove('hidden');
 
+        // 同期中インジケータをチラつかせる
         indicator.classList.remove('opacity-0');
         setTimeout(() => indicator.classList.add('opacity-0'), 1500);
 
         await syncStudentState({
           screenImage: base64Image,
-          updatedAt: new Date().toISOString(),
-          isTabActive: isTabActive
+          updatedAt: new Date().toISOString()
         });
 
       } catch (err) {
         console.error("キャプチャ送信エラー:", err);
-      }
-    }
-
-    // --- ブラウザフォーカス検知 ---
-    function initTabVisibilityDetection() {
-      // 授業タブ以外の別タブ（例: YouTube等）に「切り替えたとき」のみ作業外とみなします。
-      // WordやExcelなどの別ウィンドウを操作するためにこのブラウザが「非アクティブ」になっても、
-      // 正常な作業中として「警告対象外」にできるよう、windowの blur / focus イベントの検知は廃止しました。
-      document.addEventListener("visibilitychange", () => {
-        isTabActive = !document.hidden;
-        reportStatus();
-      });
-    }
-
-    async function reportStatus() {
-      if (!currentRoomId || !studentId) return;
-      await syncStudentState({
-        isTabActive: isTabActive,
-        updatedAt: new Date().toISOString()
-      });
-      
-      if (localStream && isTabActive) {
-        captureAndSend();
       }
     }
 
