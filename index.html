@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TFabTile 自作クローン (セキュア自動クリーン V6.7)</title>
+  <title>TFabTile 自作クローン (極限エコ・セキュリティ V6.8)</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
@@ -36,7 +36,7 @@
         </div>
         <div>
           <h1 class="text-xl font-bold tracking-tight text-slate-900">On-Demand TFabTile</h1>
-          <p class="text-xs text-slate-500">超低燃費・デュアル解像度配信モデル (V6.7)</p>
+          <p class="text-xs text-slate-500">超低燃費・極小パケット制限モデル (V6.8)</p>
         </div>
       </div>
       <div class="flex items-center gap-3">
@@ -62,7 +62,7 @@
         <div class="text-center mb-10">
           <h2 class="text-3xl font-extrabold text-slate-900 mb-2">どちらで利用しますか？</h2>
           <p class="text-slate-500 text-sm">
-            本バージョンでは、一覧表示は低画質の<strong>軽量サムネイル</strong>、拡大時のみ<strong>高精細フル画像</strong>をオンデマンド取得して通信量を90%削減します。
+            本バージョンでは、通常時は<strong>軽量サムネイル</strong>のみを同期。拡大表示した一瞬だけ<strong>高精細フル画像</strong>をオンデマンド取得して通信量を極限まで節約します。
           </p>
         </div>
 
@@ -75,7 +75,7 @@
               </div>
               <h3 class="text-xl font-bold mb-2 text-slate-900">教員（Googleでサインイン）</h3>
               <p class="text-slate-600 text-sm mb-6 leading-relaxed">
-                Googleアカウントで安全にログインし、新規ルームを開設します。一覧画面では軽量画像で全員を高速監視できます。
+                Googleアカウントで安全にログインし、ルームを開設または再設定します。既存のルームナンバーを維持しての入退室も可能です。
               </p>
             </div>
             <button onclick="selectRole('teacher')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-xl transition duration-150 flex items-center justify-center gap-2">
@@ -103,28 +103,64 @@
         </div>
       </div>
 
+      <!-- 教師：ルーム作成・設定画面 (NEW) -->
+      <div id="teacher-settings-view" class="hidden max-w-xl mx-auto">
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-6">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
+              <i data-lucide="settings" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-slate-900">ルームの新規開設・再入室</h2>
+              <p class="text-xs text-slate-500">ルームナンバーと講義情報を指定してください</p>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">講義名（省略可）</label>
+              <input type="text" id="teacher-lecture-input" placeholder="例: プログラミング演習A" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">ルームナンバー (6桁の半角数字)</label>
+              <input type="text" id="teacher-room-input" placeholder="空欄の場合はランダム自動生成" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition text-center font-mono text-lg font-bold">
+              <p class="text-[11px] text-slate-400 mt-1">※以前使用した既存のルームナンバーを直接入力して、再度同じルームに入ることもできます。</p>
+            </div>
+            <div class="pt-2 flex gap-3">
+              <button onclick="location.reload()" class="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 rounded-xl transition text-sm">
+                戻る
+              </button>
+              <button onclick="submitRoomSettings()" class="w-2/3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition text-sm flex items-center justify-center gap-2">
+                ルームを設定して監視開始
+                <i data-lucide="check-circle" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 教師：ルーム監視ダッシュボード -->
       <div id="teacher-view" class="hidden">
         <div class="bg-white border border-slate-200 rounded-2xl p-6 mb-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <div class="flex items-center gap-2 text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-1">
               <span class="w-2 h-2 rounded-full bg-indigo-600"></span>
-              Teacher Panel (V6.7 Premium)
+              Teacher Panel (V6.8 Eco Premium)
             </div>
             <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <h2 class="text-2xl font-bold text-slate-900">オンデマンド画面監視</h2>
+              <h2 class="text-2xl font-bold text-slate-900" id="display-lecture-name">講義中</h2>
               <span class="text-slate-500 text-sm">ルームID: <strong id="teacher-room-id" class="text-indigo-600 font-mono text-lg select-all">------</strong></span>
             </div>
-            <p class="text-slate-500 text-xs mt-1">※一覧は省エネ画質です。クリックした瞬間に最新の高解像度JPEG撮影を要求・読込します。</p>
+            <p class="text-slate-500 text-xs mt-1">※一覧は省エネ画質（Thumbnailのみ）。学生をクリックした瞬間だけ、オンデマンドで高精細フル画像を撮影＆表示します。</p>
           </div>
           <div class="flex flex-wrap gap-2 w-full md:w-auto">
             <button id="request-all-btn" onclick="requestCaptureAll()" class="flex-1 md:flex-initial bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-5 rounded-xl transition text-sm flex items-center justify-center gap-2 shadow-sm">
               <i data-lucide="camera" class="w-4 h-4"></i>
               全員の画面を今すぐ取得
             </button>
-            <button onclick="leaveRoomTeacher()" class="flex-1 md:flex-initial bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2.5 px-4 rounded-xl transition text-sm flex items-center justify-center gap-2">
+            <button onclick="openTeacherLeaveModal()" class="flex-1 md:flex-initial bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2.5 px-4 rounded-xl transition text-sm flex items-center justify-center gap-2">
               <i data-lucide="log-out" class="w-4 h-4"></i>
-              退出 (ルームを削除)
+              退出
             </button>
           </div>
         </div>
@@ -213,7 +249,7 @@
                 低燃費オンデマンド待機中
               </h4>
               <p class="text-[11px] text-indigo-700 leading-relaxed font-medium">
-                余分な定期通信は行いません。教員から要求が届いた瞬間のみ、<strong>軽量一覧用（thumbnail）</strong>と<strong>拡大用（full）</strong>の2種類の画像を生成して同時に安全に保存します。
+                通常時は超軽量なサムネイルのみを送信します。<strong>先生があなたの画面を拡大した瞬間だけ</strong>、高解像度フル画質の画像を撮影して即時アップロードし、閉じると瞬時に自動で削除します。
               </p>
             </div>
 
@@ -277,7 +313,7 @@
         <!-- 高画質フル画像のロードインジケーター -->
         <div id="modal-image-loading" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
           <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-white mb-3"></div>
-          <p class="text-xs text-white font-medium">高解像度フル画質をロード中...</p>
+          <p class="text-xs text-white font-medium">学生からの高画質アップロードをオンデマンド待機中...</p>
         </div>
 
         <div id="modal-loading-overlay" class="absolute inset-0 bg-slate-900/60 flex flex-col items-center justify-center text-white hidden">
@@ -288,15 +324,43 @@
       <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-xs text-slate-500">
         <span class="flex items-center gap-1.5 font-medium text-slate-600">
           <i data-lucide="shield-check" class="w-4 h-4 text-emerald-500"></i>
-          デュアル解像度技術：この画面だけ高画質データ (fullImage) を特別にロードしています。
+          極限省パケット技術：教員がこの拡大窓を開いている間のみ、学生側から高解像度データが提供され、閉じると消去されます。
         </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 教員用：退出時のクリーンアップ決定モーダル (NEW) -->
+  <div id="leave-confirm-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden opacity-0 transition-opacity duration-200" onclick="closeTeacherLeaveModal()">
+    <div class="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl p-6" onclick="event.stopPropagation()">
+      <div class="flex items-center gap-3 mb-4 text-red-600">
+        <div class="p-2 bg-red-50 rounded-xl">
+          <i data-lucide="log-out" class="w-6 h-6"></i>
+        </div>
+        <h3 class="text-lg font-bold text-slate-900">退出時の処理を選択</h3>
+      </div>
+      <p class="text-slate-600 text-sm mb-6 leading-relaxed">
+        このルームを終了して退出します。学生が後から再アクセスしたり、次回あなたが同じナンバーで講義を再開できるように、ルームIDデータを残しますか？
+      </p>
+      <div class="space-y-2.5">
+        <button onclick="leaveRoomTeacher(false)" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 px-4 rounded-xl text-sm transition flex items-center justify-center gap-2">
+          <i data-lucide="bookmark" class="w-4 h-4 text-indigo-600"></i>
+          ルームIDを維持したまま退出
+        </button>
+        <button onclick="leaveRoomTeacher(true)" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl text-sm transition flex items-center justify-center gap-2">
+          <i data-lucide="trash-2" class="w-4 h-4"></i>
+          ルームIDを完全に削除して終了
+        </button>
+        <button onclick="closeTeacherLeaveModal()" class="w-full bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 font-semibold py-2 px-4 rounded-xl text-xs transition">
+          キャンセル
+        </button>
       </div>
     </div>
   </div>
 
   <footer class="bg-white border-t border-slate-100 py-6 mt-12 text-center text-xs text-slate-400">
     <div class="max-w-7xl mx-auto px-4">
-      <p>&copy; 2026 Eco TFabTile On-Demand System (V6.7 Premium DualStream)</p>
+      <p>&copy; 2026 Eco TFabTile On-Demand System (V6.8 Premium DualStream)</p>
     </div>
   </footer>
 
@@ -367,7 +431,7 @@
       currentUser = user;
       updateAuthBadge(user);
       
-      // シークレットブラウザや未ログイン時でも、無限ループせず最初の役割選択を表示
+      // 無限ループせず最初の役割選択を表示
       if (myRole === null) {
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('role-selection').classList.remove('hidden');
@@ -386,7 +450,7 @@
           document.getElementById('loading').classList.remove('hidden');
           document.getElementById('role-selection').classList.add('hidden');
           
-          // 【重要】既存セッションが匿名アカウント（生徒）だった場合は、衝突を防ぐため確実にサインアウトする
+          // 【重要】セッションの衝突防止
           if (auth.currentUser && auth.currentUser.isAnonymous) {
             await signOut(auth);
           }
@@ -397,14 +461,8 @@
           updateAuthBadge(currentUser);
           
           document.getElementById('loading').classList.add('hidden');
-          document.getElementById('teacher-view').classList.remove('hidden');
-          
-          currentRoomId = Math.floor(100000 + Math.random() * 900000).toString();
-          document.getElementById('teacher-room-id').innerText = currentRoomId;
-          
-          await initializeRoomOnDb(currentRoomId);
-          startListeningToRoom(currentRoomId); 
-          startListeningToStudents(currentRoomId);
+          // 設定画面を表示 (NEW)
+          document.getElementById('teacher-settings-view').classList.remove('hidden');
         } catch (error) {
           console.error("Googleサインイン失敗:", error);
           
@@ -433,7 +491,6 @@
           document.getElementById('loading').classList.remove('hidden');
           document.getElementById('role-selection').classList.add('hidden');
           
-          // 【重要】既存セッションがGoogleユーザー（教員）だった場合は、セッション競合を避けるためサインアウトする
           if (auth.currentUser && !auth.currentUser.isAnonymous) {
             await signOut(auth);
           }
@@ -457,19 +514,71 @@
       lucide.createIcons();
     };
 
-    async function initializeRoomOnDb(roomId) {
+    // 教員：ルーム設定決定時の処理 (NEW)
+    window.submitRoomSettings = async function() {
+      try {
+        const lectureInput = document.getElementById('teacher-lecture-input').value.trim();
+        let roomInput = document.getElementById('teacher-room-input').value.trim();
+
+        if (roomInput !== "" && (roomInput.length !== 6 || isNaN(roomInput))) {
+          showCustomAlert("ルームナンバーは6桁の半角数字、または空欄にしてください。");
+          return;
+        }
+
+        // 空欄の場合は自動で生成
+        if (roomInput === "") {
+          roomInput = Math.floor(100000 + Math.random() * 900000).toString();
+        }
+
+        currentRoomId = roomInput;
+        document.getElementById('teacher-room-id').innerText = currentRoomId;
+        document.getElementById('display-lecture-name').innerText = lectureInput !== "" ? lectureInput : "講義画面監視";
+
+        document.getElementById('teacher-settings-view').classList.add('hidden');
+        document.getElementById('loading-text').innerText = "ルームの準備または既存ルームの引き継ぎを行っています...";
+        document.getElementById('loading').classList.remove('hidden');
+
+        // Firestore上にルームを作成、または既存ルームを取得
+        await initializeRoomOnDb(currentRoomId, lectureInput);
+
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('teacher-view').classList.remove('hidden');
+
+        startListeningToRoom(currentRoomId); 
+        startListeningToStudents(currentRoomId);
+        lucide.createIcons();
+
+      } catch (err) {
+        console.error("設定適用失敗:", err);
+        showCustomAlert("ルームの読み込み・保存に失敗しました。詳細: " + err.message);
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('teacher-settings-view').classList.remove('hidden');
+      }
+    };
+
+    async function initializeRoomOnDb(roomId, lectureName) {
       if (!currentUser) return;
       const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
+      
+      // 既存のルームがあるか確認し、存在する場合は引き継ぐ
+      const roomSnap = await getDoc(roomRef);
+      const isExisting = roomSnap.exists();
+
       await setDoc(roomRef, {
-        createdAt: new Date().toISOString(),
+        createdAt: isExisting ? roomSnap.data().createdAt : new Date().toISOString(),
         hostId: currentUser.uid,
         status: 'active',
-        requestTriggerAll: "", 
-        requestTimeAll: "",
+        lectureName: lectureName || (isExisting ? (roomSnap.data().lectureName || "") : ""),
+        requestTriggerAll: isExisting ? (roomSnap.data().requestTriggerAll || "") : "", 
+        requestTimeAll: isExisting ? (roomSnap.data().requestTimeAll || "") : "",
         requestTarget: "",    
         requestTriggerSingle: "", 
         requestTimeSingle: ""
       }, { merge: true });
+
+      if (isExisting && roomSnap.data().lectureName) {
+        document.getElementById('display-lecture-name').innerText = roomSnap.data().lectureName;
+      }
     }
 
     let unsubscribeStudents = null;
@@ -572,7 +681,7 @@
       }
     }
 
-    // タイル一覧の更新 (バグ1: ホバー時の不要な更新ボタンを削除)
+    // タイル一覧の更新
     function updateTilesGrid(students) {
       const grid = document.getElementById('tiles-grid');
       const noStudentsPlaceholder = document.getElementById('no-students');
@@ -652,7 +761,7 @@
     }
 
     let activeZoomStudentId = null;
-    // バグ2: サムネイルをクリックした瞬間に即座に最新フルサイズ画像をリクエスト＆ロードする
+    // クリックした瞬間に即座に最新フルサイズ画像をリクエスト＆ロード
     window.zoomStudentTile = function(student) {
       activeZoomStudentId = student.id;
       
@@ -670,7 +779,7 @@
       // ★クリックされた瞬間、即座に生徒へ高画質キャプチャのオンデマンド撮影要求を送る
       requestCaptureSingle(student.id);
 
-      // 特定学生の高解像度画像（fullImage）専用ドキュメントを監視開始
+      // 特定学生の高解像度画像（fullImage）の格納場所を data/students/{studentId} からロードする (RESTRUCTURED)
       listenToFullImage(student.id);
 
       document.getElementById('modal-refresh-btn').onclick = () => requestCaptureSingle(student.id);
@@ -680,11 +789,12 @@
       }, 50);
     };
 
-    // 教員側：拡大表示した学生の「フル高解像度画像」のみを一時的にリアルタイムリッスンする
+    // 教員側：拡大表示した学生の「フル高解像度画像」のみを一時的にリアルタイムリッスンする (RESTRUCTURED)
     function listenToFullImage(studentIdToListen) {
       if (unsubscribeZoomImage) unsubscribeZoomImage();
 
-      const imgRef = doc(db, 'artifacts', appId, 'public', 'data', 'full_images', studentIdToListen);
+      // 格納場所をdata/students/{studentIdToListen}に変更して取得
+      const imgRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentIdToListen);
       unsubscribeZoomImage = onSnapshot(imgRef, (docSnap) => {
         const imgElement = document.getElementById('modal-image');
         const loadingText = document.getElementById('modal-image-loading');
@@ -714,6 +824,7 @@
       lastUpdated.innerText = `最終更新: ${getRelativeTime(student.updatedAt)}`;
     }
 
+    // 拡大画面を閉じた時：生徒側のリセット・クリア要求をトリガー＆リスナー解除
     window.closeZoomModal = function() {
       const modal = document.getElementById('zoom-modal');
       modal.classList.remove('opacity-100');
@@ -721,6 +832,15 @@
       if (unsubscribeZoomImage) {
         unsubscribeZoomImage();
         unsubscribeZoomImage = null;
+      }
+
+      // ルームの個別更新ターゲットをリセットし、生徒に高画質画像の削除を指示
+      if (currentRoomId) {
+        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
+        updateDoc(roomRef, {
+          requestTarget: "",
+          requestTriggerSingle: ""
+        }).catch(err => console.error("閉鎖指示リセット失敗:", err));
       }
 
       setTimeout(() => {
@@ -777,7 +897,8 @@
           name: nameInput,
           joinedAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          thumbnailImage: "" 
+          thumbnailImage: "",
+          fullImage: "" // fullImageフィールドを初期作成
         }, { merge: true });
 
         document.getElementById('sharing-status-dot').className = "w-2.5 h-2.5 rounded-full bg-slate-400";
@@ -801,20 +922,39 @@
         if (!docSnap.exists()) return;
         const data = docSnap.data();
         
-        // ① 全体要求トークンの更新チェック
+        // ① 全体要求トークンの更新チェック (サムネイルのみ更新)
         if (data.requestTriggerAll && data.requestTriggerAll !== lastAllRequestToken) {
           lastAllRequestToken = data.requestTriggerAll;
-          captureAndSendImmediately("先生からの全体要求で画面キャプチャを送信しました！");
+          captureAndSendImmediately(false, "全体指示により更新しました！");
         }
         
-        // ② 個別要求（ターゲットが自分自身である場合）のトークン更新チェック
+        // ② 個別要求（拡大ズームの対象が自分自身である場合）の更新チェック (高画質＆サムネイル同時更新)
         if (data.requestTarget === studentId && data.requestTriggerSingle && data.requestTriggerSingle !== lastSingleRequestToken) {
           lastSingleRequestToken = data.requestTriggerSingle;
-          captureAndSendImmediately("先生からの個別要求で画面キャプチャを送信しました！");
+          captureAndSendImmediately(true, "拡大表示のため高画質画面を送信しました！");
+        }
+
+        // ③ 拡大が解除された場合（教員がモーダルを閉じたのを検知して即座にfullImageを空にリセット）
+        if (data.requestTarget !== studentId && lastSingleRequestToken !== "") {
+          lastSingleRequestToken = "";
+          clearFullImageOnDb();
         }
       }, (err) => {
         console.error("Request listen error:", err);
       });
+    }
+
+    // 高画質画像（fullImage）をFirestore上でクリアしパケットと容量を削減する
+    async function clearFullImageOnDb() {
+      if (!currentUser || !currentRoomId || !studentId) return;
+      try {
+        const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
+        await updateDoc(studentDocRef, {
+          fullImage: ""
+        });
+      } catch (e) {
+        console.error("FullImageクリア失敗:", e);
+      }
     }
 
     // --- 学生：画面共有のセットアップ ---
@@ -841,9 +981,9 @@
 
         document.getElementById('sharing-status-dot').className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse animate-duration-1000";
 
-        // ① 接続時に1枚だけ撮影してアップロード
+        // ① 接続時に1枚だけ撮影してアップロード（サムネイルのみ）
         setTimeout(() => {
-          captureAndSendImmediately("画面共有の接続画像を設定しました！");
+          captureAndSendImmediately(false, "画面共有の接続画像を設定しました！");
         }, 1000);
 
         localStream.getVideoTracks()[0].onended = () => {
@@ -877,22 +1017,15 @@
       document.getElementById('sending-indicator').classList.add('opacity-0');
       document.getElementById('sharing-status-dot').className = "w-2.5 h-2.5 rounded-full bg-slate-400";
 
-      // ② 切断時：両方のコレクションの画像をクリア
+      // ② 切断時：ドキュメント内の画像をクリア
       if (currentUser && currentRoomId && studentId) {
         try {
-          // サムネイルのクリア
           const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
           await updateDoc(studentDocRef, {
             thumbnailImage: "",
-            updatedAt: new Date().toISOString()
-          });
-
-          // フル画像のクリア
-          const fullImageDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'full_images', studentId);
-          await setDoc(fullImageDocRef, {
             fullImage: "",
             updatedAt: new Date().toISOString()
-          }, { merge: true });
+          });
         } catch (err) {
           console.error("切断時リセットエラー:", err);
         }
@@ -901,8 +1034,8 @@
       lucide.createIcons();
     };
 
-    // --- 要求された瞬間のみデュアル解像度（thumbnail/full）キャプチャを撮影して個別格納するコア関数 ---
-    async function captureAndSendImmediately(statusMessage = "送信しました！") {
+    // --- 撮影・格納制御コア関数 (要件2: 拡大表示指示の有無で取得画質と転送を制限) ---
+    async function captureAndSendImmediately(isFullImageRequested = false, statusMessage = "送信しました！") {
       const video = document.getElementById('capture-video');
       const thumbCanvas = document.getElementById('thumbnail-canvas');
       const fullCanvas = document.getElementById('full-canvas');
@@ -941,11 +1074,16 @@
           thumbCtx.drawImage(video, 0, 0, thumbWidth, thumbHeight);
           const base64Thumbnail = thumbCanvas.toDataURL('image/jpeg', 0.30);
 
-          // ② 拡大フルサイズJPEGの生成
-          fullCtx.drawImage(video, 0, 0, fullWidth, fullHeight);
-          const base64FullImage = fullCanvas.toDataURL('image/jpeg', 0.60);
+          let base64FullImage = "";
+          // ★拡大表示要求（教員のズーム）があったときだけ、大きな高画質画像を作成
+          if (isFullImageRequested) {
+            fullCtx.drawImage(video, 0, 0, fullWidth, fullHeight);
+            base64FullImage = fullCanvas.toDataURL('image/jpeg', 0.60);
+            previewImg.src = base64FullImage;
+          } else {
+            previewImg.src = base64Thumbnail;
+          }
 
-          previewImg.src = base64FullImage;
           previewImg.classList.remove('hidden');
 
           if (indicatorText) indicatorText.innerText = statusMessage;
@@ -954,22 +1092,23 @@
             indicator.classList.add('opacity-0');
           }, 2500);
 
-          // サムネイル・タイムスタンプデータを生徒ドキュメントに更新
+          // 3. 統一された `data/students/{studentId}` の中に書き込みを行う
           const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
-          await updateDoc(studentDocRef, {
+          
+          const updateData = {
             thumbnailImage: base64Thumbnail,
             updatedAt: new Date().toISOString()
-          });
+          };
 
-          // フル高解像度画像は個別高精細用のコレクションに切り離して保存
-          const fullImageDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'full_images', studentId);
-          await setDoc(fullImageDocRef, {
-            fullImage: base64FullImage,
-            updatedAt: new Date().toISOString()
-          }, { merge: true });
+          // 拡大表示時のみ fullImage を書き込み、通常時は現状維持または上書きしない（不要なパケット転送を完全に阻止）
+          if (isFullImageRequested) {
+            updateData.fullImage = base64FullImage;
+          }
+
+          await updateDoc(studentDocRef, updateData);
         }
       } catch (err) {
-        console.error("キャプチャデュアルストリーム送信エラー:", err);
+        console.error("キャプチャ制御送信エラー:", err);
       }
     }
 
@@ -986,9 +1125,6 @@
         try {
           const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
           await deleteDoc(studentDocRef);
-
-          const fullImageDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'full_images', studentId);
-          await deleteDoc(fullImageDocRef);
         } catch (err) {
           console.error("退出時削除エラー:", err);
         }
@@ -996,21 +1132,39 @@
       location.reload();
     };
 
-    // バグ3: 教員の退出時に該当ルームをFirestoreから確実に削除するクリーンアップ関数
-    window.leaveRoomTeacher = async function() {
+    // 教員退出時の確認モーダル制御 (NEW)
+    window.openTeacherLeaveModal = function() {
+      const modal = document.getElementById('leave-confirm-modal');
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        modal.classList.add('opacity-100');
+      }, 50);
+    };
+
+    window.closeTeacherLeaveModal = function() {
+      const modal = document.getElementById('leave-confirm-modal');
+      modal.classList.remove('opacity-100');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+      }, 200);
+    };
+
+    // 要件4: 教員の退出。ルームID維持の有無を選択可能にする
+    window.leaveRoomTeacher = async function(shouldDeleteRoom = false) {
       if (unsubscribeRoom) unsubscribeRoom();
       if (unsubscribeStudents) unsubscribeStudents();
       if (unsubscribeZoomImage) unsubscribeZoomImage();
 
-      if (currentRoomId) {
+      if (currentRoomId && shouldDeleteRoom) {
         try {
-          // ルームドキュメント自体の削除
+          // 「完全に削除して終了」を選択した場合のみ、ルームドキュメントを破棄
           const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
           await deleteDoc(roomRef);
         } catch (err) {
           console.error("教員退出時ルーム削除失敗:", err);
         }
       }
+      // 「維持したまま退出」の場合は何も削除せずそのままリロード
       location.reload();
     };
 
@@ -1060,12 +1214,12 @@
       setTimeout(() => { if (alertDiv) alertDiv.remove(); }, 12000);
     }
 
-    // 教員か生徒かでウィンドウ閉鎖時のクリーンアップ処理を出し分ける
     window.addEventListener('beforeunload', () => {
       if (myRole === 'student') {
         leaveRoom();
       } else if (myRole === 'teacher') {
-        leaveRoomTeacher();
+        // デフォルトでは「維持したまま退出（false）」で静的クローズ
+        leaveRoomTeacher(false);
       }
     });
   </script>
