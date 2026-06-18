@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TFabTile 自作クローン (セキュア同期 V6.6.1)</title>
+  <title>TFabTile 自作クローン (セキュア自動クリーン V6.7)</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
@@ -36,7 +36,7 @@
         </div>
         <div>
           <h1 class="text-xl font-bold tracking-tight text-slate-900">On-Demand TFabTile</h1>
-          <p class="text-xs text-slate-500">超低燃費・デュアル解像度配信モデル (V6.6.1)</p>
+          <p class="text-xs text-slate-500">超低燃費・デュアル解像度配信モデル (V6.7)</p>
         </div>
       </div>
       <div class="flex items-center gap-3">
@@ -109,22 +109,22 @@
           <div>
             <div class="flex items-center gap-2 text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-1">
               <span class="w-2 h-2 rounded-full bg-indigo-600"></span>
-              Teacher Panel (V6.6.1 Premium)
+              Teacher Panel (V6.7 Premium)
             </div>
             <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <h2 class="text-2xl font-bold text-slate-900">オンデマンド画面監視</h2>
               <span class="text-slate-500 text-sm">ルームID: <strong id="teacher-room-id" class="text-indigo-600 font-mono text-lg select-all">------</strong></span>
             </div>
-            <p class="text-slate-500 text-xs mt-1">※一覧は省エネ画質です。クリックして拡大（ズーム）したときだけ高解像度JPEGを読み込みます。</p>
+            <p class="text-slate-500 text-xs mt-1">※一覧は省エネ画質です。クリックした瞬間に最新の高解像度JPEG撮影を要求・読込します。</p>
           </div>
           <div class="flex flex-wrap gap-2 w-full md:w-auto">
             <button id="request-all-btn" onclick="requestCaptureAll()" class="flex-1 md:flex-initial bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-5 rounded-xl transition text-sm flex items-center justify-center gap-2 shadow-sm">
               <i data-lucide="camera" class="w-4 h-4"></i>
               全員の画面を今すぐ取得
             </button>
-            <button onclick="location.reload()" class="flex-1 md:flex-initial bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2.5 px-4 rounded-xl transition text-sm flex items-center justify-center gap-2">
+            <button onclick="leaveRoomTeacher()" class="flex-1 md:flex-initial bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2.5 px-4 rounded-xl transition text-sm flex items-center justify-center gap-2">
               <i data-lucide="log-out" class="w-4 h-4"></i>
-              退出
+              退出 (ルームを削除)
             </button>
           </div>
         </div>
@@ -264,7 +264,7 @@
         <div class="flex items-center gap-2">
           <button id="modal-refresh-btn" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-1.5 px-3 rounded-lg text-xs transition flex items-center gap-1">
             <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-            この人の画面を今すぐ取得
+            この人の画面を再取得
           </button>
           <button onclick="closeZoomModal()" class="p-1.5 hover:bg-slate-200 rounded-lg transition text-slate-400 hover:text-slate-600">
             <i data-lucide="x" class="w-5 h-5"></i>
@@ -296,7 +296,7 @@
 
   <footer class="bg-white border-t border-slate-100 py-6 mt-12 text-center text-xs text-slate-400">
     <div class="max-w-7xl mx-auto px-4">
-      <p>&copy; 2026 Eco TFabTile On-Demand System (V6.6.1 Premium DualStream)</p>
+      <p>&copy; 2026 Eco TFabTile On-Demand System (V6.7 Premium DualStream)</p>
     </div>
   </footer>
 
@@ -408,7 +408,6 @@
         } catch (error) {
           console.error("Googleサインイン失敗:", error);
           
-          // 【超親切なエラーガイダンス】エラーコードを解析して的確に解決方法を提示します
           let alertMsg = `Google認証に失敗しました。理由: ${error.message} (Code: ${error.code})`;
           
           if (error.code === 'auth/unauthorized-domain') {
@@ -439,7 +438,6 @@
             await signOut(auth);
           }
           
-          // 匿名サインインを実行（未ログインまたはサインアウト後の場合）
           if (!auth.currentUser) {
             const result = await signInAnonymously(auth);
             currentUser = result.user;
@@ -574,7 +572,7 @@
       }
     }
 
-    // タイル一覧の更新
+    // タイル一覧の更新 (バグ1: ホバー時の不要な更新ボタンを削除)
     function updateTilesGrid(students) {
       const grid = document.getElementById('tiles-grid');
       const noStudentsPlaceholder = document.getElementById('no-students');
@@ -627,13 +625,6 @@
                </div>`
             }
 
-            <div class="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition duration-150 flex items-center justify-center p-2">
-              <button onclick="event.stopPropagation(); requestCaptureSingle('${student.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-xl text-xs flex items-center gap-1.5 shadow-lg transform translate-y-2 group-hover:translate-y-0 transition duration-200">
-                <i data-lucide="camera" class="w-3.5 h-3.5"></i>
-                この画面を更新
-              </button>
-            </div>
-
             ${isWaitingResponse ? `
               <div class="absolute top-2 left-2 bg-amber-500 text-slate-900 text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 shadow-sm">
                 <i data-lucide="clock" class="w-2.5 h-2.5"></i>
@@ -661,6 +652,7 @@
     }
 
     let activeZoomStudentId = null;
+    // バグ2: サムネイルをクリックした瞬間に即座に最新フルサイズ画像をリクエスト＆ロードする
     window.zoomStudentTile = function(student) {
       activeZoomStudentId = student.id;
       
@@ -675,7 +667,10 @@
 
       updateZoomModalUI(student);
 
-      // モーダルオープン時：特定学生の高解像度画像（fullImage）専用ドキュメントを監視開始
+      // ★クリックされた瞬間、即座に生徒へ高画質キャプチャのオンデマンド撮影要求を送る
+      requestCaptureSingle(student.id);
+
+      // 特定学生の高解像度画像（fullImage）専用ドキュメントを監視開始
       listenToFullImage(student.id);
 
       document.getElementById('modal-refresh-btn').onclick = () => requestCaptureSingle(student.id);
@@ -946,7 +941,7 @@
           thumbCtx.drawImage(video, 0, 0, thumbWidth, thumbHeight);
           const base64Thumbnail = thumbCanvas.toDataURL('image/jpeg', 0.30);
 
-          // ② 拡大フルサイズJPEG의 生成
+          // ② 拡大フルサイズJPEGの生成
           fullCtx.drawImage(video, 0, 0, fullWidth, fullHeight);
           const base64FullImage = fullCanvas.toDataURL('image/jpeg', 0.60);
 
@@ -978,7 +973,7 @@
       }
     }
 
-    // ② 退出時
+    // 学生の退出時
     window.leaveRoom = async function() {
       if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
@@ -996,6 +991,24 @@
           await deleteDoc(fullImageDocRef);
         } catch (err) {
           console.error("退出時削除エラー:", err);
+        }
+      }
+      location.reload();
+    };
+
+    // バグ3: 教員の退出時に該当ルームをFirestoreから確実に削除するクリーンアップ関数
+    window.leaveRoomTeacher = async function() {
+      if (unsubscribeRoom) unsubscribeRoom();
+      if (unsubscribeStudents) unsubscribeStudents();
+      if (unsubscribeZoomImage) unsubscribeZoomImage();
+
+      if (currentRoomId) {
+        try {
+          // ルームドキュメント自体の削除
+          const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
+          await deleteDoc(roomRef);
+        } catch (err) {
+          console.error("教員退出時ルーム削除失敗:", err);
         }
       }
       location.reload();
@@ -1044,13 +1057,15 @@
       `;
       document.body.appendChild(alertDiv);
       lucide.createIcons();
-      // 設定エラーなどは確実に読んでもらうため自動削除を無効、または長めに設定します (12秒)
       setTimeout(() => { if (alertDiv) alertDiv.remove(); }, 12000);
     }
 
+    // 教員か生徒かでウィンドウ閉鎖時のクリーンアップ処理を出し分ける
     window.addEventListener('beforeunload', () => {
       if (myRole === 'student') {
         leaveRoom();
+      } else if (myRole === 'teacher') {
+        leaveRoomTeacher();
       }
     });
   </script>
