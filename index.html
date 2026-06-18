@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TFabTile 自作クローン (永続認証モデル V6.9)</title>
+  <title>ScreenTile</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
@@ -35,15 +35,15 @@
           <i data-lucide="refresh-cw" class="w-6 h-6"></i>
         </div>
         <div>
-          <h1 class="text-xl font-bold tracking-tight text-slate-900">On-Demand TFabTile</h1>
-          <p class="text-xs text-slate-500">超低燃費・デュアル解像度配信モデル (V6.9)</p>
+          <h1 class="text-xl font-bold tracking-tight text-slate-900">ScreenTile</h1>
+          <p class="text-xs text-slate-500">パケット制限モデル Ver.6.8</p>
         </div>
       </div>
-      <div class="flex items-center gap-3 text-xs text-slate-400 font-medium">
-        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-          セキュア常時接続対応
-        </span>
+      <div class="flex items-center gap-3">
+        <div id="auth-badge" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+          <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+          システム初期化中...
+        </div>
       </div>
     </div>
   </header>
@@ -60,9 +60,9 @@
       <!-- ロール（役割）選択画面 -->
       <div id="role-selection" class="hidden max-w-2xl mx-auto py-12">
         <div class="text-center mb-10">
-          <h2 class="text-3xl font-extrabold text-slate-900 mb-2">どちらで利用しますか？</h2>
+          <h2 class="text-3xl font-extrabold text-slate-900 mb-2">どちらで入室しますか？</h2>
           <p class="text-slate-500 text-sm">
-            本バージョンでは、通常時は<strong>軽量サムネイル</strong>のみを同期。拡大表示した一瞬だけ<strong>高精細フル画像</strong>をオンデマンド取得して通信量を極限まで節約します。
+            学生さんの共有画面を必要な時だけ取得・一覧表示します。拡大も可能です。
           </p>
         </div>
 
@@ -75,12 +75,12 @@
               </div>
               <h3 class="text-xl font-bold mb-2 text-slate-900">教員（Googleでサインイン）</h3>
               <p class="text-slate-600 text-sm mb-6 leading-relaxed">
-                Googleアカウントで安全にログインし、ルームを開設・再入室します。一度ログインすれば、次回からはボタン一つで即開始できます。
+                Googleアカウントでログインし、ルームを設定します。既存のルームを使用して入室することも可能です。
               </p>
             </div>
             <button onclick="selectRole('teacher')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-xl transition duration-150 flex items-center justify-center gap-2">
               <i data-lucide="log-in" class="w-4 h-4"></i>
-              教員として開始
+              Googleログインして入室
             </button>
           </div>
 
@@ -92,18 +92,18 @@
               </div>
               <h3 class="text-xl font-bold mb-2 text-slate-900">学生（ログイン不要）</h3>
               <p class="text-slate-600 text-sm mb-6 leading-relaxed">
-                面倒な登録なしで、安全にワンクリック参加。教員から提示された6桁のルームIDを入力して瞬時に画面共有を開始できます。
+                教員から提示された6桁のルームナンバーを入力して入室できます。
               </p>
             </div>
             <button onclick="selectRole('student')" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-medium py-3 px-4 rounded-xl transition duration-150 flex items-center justify-center gap-2">
-              授業に参加する
+              入室
               <i data-lucide="arrow-right" class="w-4 h-4"></i>
             </button>
           </div>
         </div>
       </div>
 
-      <!-- 教師：ルーム作成・設定画面 -->
+      <!-- 教師：ルーム作成・設定画面 (NEW) -->
       <div id="teacher-settings-view" class="hidden max-w-xl mx-auto">
         <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-6">
           <div class="flex items-center gap-3 mb-6">
@@ -145,7 +145,7 @@
           <div>
             <div class="flex items-center gap-2 text-xs font-semibold text-indigo-600 uppercase tracking-wider mb-1">
               <span class="w-2 h-2 rounded-full bg-indigo-600"></span>
-              Teacher Panel (V6.9 Eco Premium)
+              Teacher Panel (V6.8 Eco Premium)
             </div>
             <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <h2 class="text-2xl font-bold text-slate-900" id="display-lecture-name">講義中</h2>
@@ -158,7 +158,7 @@
               <i data-lucide="camera" class="w-4 h-4"></i>
               全員の画面を今すぐ取得
             </button>
-            <button onclick="location.reload()" class="flex-1 md:flex-initial bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2.5 px-4 rounded-xl transition text-sm flex items-center justify-center gap-2">
+            <button onclick="openTeacherLeaveModal()" class="flex-1 md:flex-initial bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2.5 px-4 rounded-xl transition text-sm flex items-center justify-center gap-2">
               <i data-lucide="log-out" class="w-4 h-4"></i>
               退出
             </button>
@@ -206,12 +206,12 @@
 
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-semibold text-slate-700 mb-1">あなたの氏名</label>
-              <input type="text" id="student-name-input" placeholder="例: 山田 太郎" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-            </div>
-            <div>
               <label class="block text-sm font-semibold text-slate-700 mb-1">ルームID (6桁)</label>
               <input type="text" id="student-room-input" placeholder="例: 123456" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition text-center font-mono text-lg font-bold">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-1">あなたの氏名</label>
+              <input type="text" id="student-name-input" placeholder="例: 山田 太郎" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
             </div>
             <div class="pt-2 flex gap-3">
               <button onclick="location.reload()" class="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 rounded-xl transition text-sm">
@@ -330,7 +330,7 @@
     </div>
   </div>
 
-  <!-- 教員用：退出時のクリーンアップ決定モーダル -->
+  <!-- 教員用：退出時のクリーンアップ決定モーダル (NEW) -->
   <div id="leave-confirm-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden opacity-0 transition-opacity duration-200" onclick="closeTeacherLeaveModal()">
     <div class="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl p-6" onclick="event.stopPropagation()">
       <div class="flex items-center gap-3 mb-4 text-red-600">
@@ -360,7 +360,7 @@
 
   <footer class="bg-white border-t border-slate-100 py-6 mt-12 text-center text-xs text-slate-400">
     <div class="max-w-7xl mx-auto px-4">
-      <p>&copy; 2026 Eco TFabTile On-Demand System (V6.9 Premium DualStream)</p>
+      <p>&copy; 2026 Eco TFabTile On-Demand System (V6.8 Premium DualStream)</p>
     </div>
   </footer>
 
@@ -411,11 +411,27 @@
     let lastAllRequestToken = ""; // 学生側で前回処理した全体要求トークン
     let lastSingleRequestToken = ""; // 学生側で前回処理した個別要求トークン
 
-    // セッション監視 (バッジ廃止に伴うUIシンプル化)
+    // 各種初期化時のセキュリティバッジ表示
+    const updateAuthBadge = (user) => {
+      const badge = document.getElementById('auth-badge');
+      if (!user) {
+        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-400"></span> 未ログイン`;
+        badge.className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200";
+      } else if (user.isAnonymous) {
+        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-sky-500"></span> 匿名認証中 (生徒)`;
+        badge.className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-sky-50 text-sky-700 border border-sky-200";
+      } else {
+        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> 教員認証中 (${escapeHTML(user.displayName || "Googleユーザー")})`;
+        badge.className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200";
+      }
+    };
+
+    // シークレットブラウザ対応：初期ロード時は自動的にログインを行わず、単に認証状態を確認する
     onAuthStateChanged(auth, (user) => {
       currentUser = user;
+      updateAuthBadge(user);
       
-      // シークレットブラウザや未ログイン時でも、無限ループせず最初の役割選択を表示
+      // 無限ループせず最初の役割選択を表示
       if (myRole === null) {
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('role-selection').classList.remove('hidden');
@@ -423,34 +439,29 @@
       lucide.createIcons();
     });
 
-    // ロール決定時の認証フロー分岐（★Googleログインの永続セッション対応）
+    // ロール決定時の認証フロー分岐（セッションのクリーン切り替え）
     window.selectRole = async function(role) {
       myRole = role;
 
       if (role === 'teacher') {
         try {
           // ロード中表示に切り替え
-          document.getElementById('loading-text').innerText = "接続準備中...";
+          document.getElementById('loading-text').innerText = "Googleサインインを準備しています...";
           document.getElementById('loading').classList.remove('hidden');
           document.getElementById('role-selection').classList.add('hidden');
           
-          // 【セッションの衝突回避】既存セッションが匿名アカウント（生徒）だった場合は、衝突を防ぐため確実にサインアウトする
+          // 【重要】セッションの衝突防止
           if (auth.currentUser && auth.currentUser.isAnonymous) {
             await signOut(auth);
           }
           
-          // ★Google永続セッションが存在する場合は、再ログインをスキップして即時に設定画面へ進む
-          if (auth.currentUser && !auth.currentUser.isAnonymous) {
-            currentUser = auth.currentUser;
-          } else {
-            // セッションが存在しない場合のみGoogleサインインを実行
-            const provider = new GoogleAuthProvider();
-            const result = await signInWithPopup(auth, provider);
-            currentUser = result.user;
-          }
+          const provider = new GoogleAuthProvider();
+          const result = await signInWithPopup(auth, provider);
+          currentUser = result.user;
+          updateAuthBadge(currentUser);
           
           document.getElementById('loading').classList.add('hidden');
-          // 設定画面を表示
+          // 設定画面を表示 (NEW)
           document.getElementById('teacher-settings-view').classList.remove('hidden');
         } catch (error) {
           console.error("Googleサインイン失敗:", error);
@@ -480,18 +491,15 @@
           document.getElementById('loading').classList.remove('hidden');
           document.getElementById('role-selection').classList.add('hidden');
           
-          // 【重要】既存セッションがGoogleユーザー（教員）だった場合は、セッション競合を避けるためサインアウトする
           if (auth.currentUser && !auth.currentUser.isAnonymous) {
             await signOut(auth);
           }
           
-          // すでに匿名認証が有効な場合はそのままスキップ
-          if (auth.currentUser && auth.currentUser.isAnonymous) {
-            currentUser = auth.currentUser;
-          } else {
+          if (!auth.currentUser) {
             const result = await signInAnonymously(auth);
             currentUser = result.user;
           }
+          updateAuthBadge(currentUser);
           
           document.getElementById('loading').classList.add('hidden');
           document.getElementById('student-view').classList.remove('hidden');
@@ -506,7 +514,7 @@
       lucide.createIcons();
     };
 
-    // 教員：ルーム設定決定時の処理
+    // 教員：ルーム設定決定時の処理 (NEW)
     window.submitRoomSettings = async function() {
       try {
         const lectureInput = document.getElementById('teacher-lecture-input').value.trim();
@@ -771,7 +779,7 @@
       // ★クリックされた瞬間、即座に生徒へ高画質キャプチャのオンデマンド撮影要求を送る
       requestCaptureSingle(student.id);
 
-      // 特定学生の高解像度画像（fullImage）の格納場所を data/students/{studentId} からロードする
+      // 特定学生の高解像度画像（fullImage）の格納場所を data/students/{studentId} からロードする (RESTRUCTURED)
       listenToFullImage(student.id);
 
       document.getElementById('modal-refresh-btn').onclick = () => requestCaptureSingle(student.id);
@@ -781,7 +789,7 @@
       }, 50);
     };
 
-    // 教員側：拡大表示した学生の「フル高解像度画像」のみを一時的にリアルタイムリッスンする
+    // 教員側：拡大表示した学生の「フル高解像度画像」のみを一時的にリアルタイムリッスンする (RESTRUCTURED)
     function listenToFullImage(studentIdToListen) {
       if (unsubscribeZoomImage) unsubscribeZoomImage();
 
@@ -852,12 +860,12 @@
           return;
         }
         if (!roomInput || roomInput.length !== 6 || isNaN(roomInput)) {
-          showCustomAlert("正しい6桁 of ルームIDを入力してください。");
+          showCustomAlert("正しい6桁のルームIDを入力してください。");
           return;
         }
 
         if (!currentUser) {
-          showCustomAlert("セキュア接続の初期化中です。数秒後にもう一度確認して次へを押してください。");
+          showCustomAlert("匿名ログインを準備中です。数秒後にもう一度確認して次へを押してください。");
           return;
         }
 
@@ -890,7 +898,7 @@
           joinedAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           thumbnailImage: "",
-          fullImage: "" 
+          fullImage: "" // fullImageフィールドを初期作成
         }, { merge: true });
 
         document.getElementById('sharing-status-dot').className = "w-2.5 h-2.5 rounded-full bg-slate-400";
@@ -926,7 +934,7 @@
           captureAndSendImmediately(true, "拡大表示のため高画質画面を送信しました！");
         }
 
-        // ③ 拡大が解除された場合
+        // ③ 拡大が解除された場合（教員がモーダルを閉じたのを検知して即座にfullImageを空にリセット）
         if (data.requestTarget !== studentId && lastSingleRequestToken !== "") {
           lastSingleRequestToken = "";
           clearFullImageOnDb();
@@ -1026,7 +1034,7 @@
       lucide.createIcons();
     };
 
-    // --- 撮影・格納制御コア関数 ---
+    // --- 撮影・格納制御コア関数 (要件2: 拡大表示指示の有無で取得画質と転送を制限) ---
     async function captureAndSendImmediately(isFullImageRequested = false, statusMessage = "送信しました！") {
       const video = document.getElementById('capture-video');
       const thumbCanvas = document.getElementById('thumbnail-canvas');
@@ -1067,7 +1075,7 @@
           const base64Thumbnail = thumbCanvas.toDataURL('image/jpeg', 0.30);
 
           let base64FullImage = "";
-          // 拡大表示要求があったときだけ高画質画像を作成
+          // ★拡大表示要求（教員のズーム）があったときだけ、大きな高画質画像を作成
           if (isFullImageRequested) {
             fullCtx.drawImage(video, 0, 0, fullWidth, fullHeight);
             base64FullImage = fullCanvas.toDataURL('image/jpeg', 0.60);
@@ -1092,6 +1100,7 @@
             updatedAt: new Date().toISOString()
           };
 
+          // 拡大表示時のみ fullImage を書き込み、通常時は現状維持または上書きしない（不要なパケット転送を完全に阻止）
           if (isFullImageRequested) {
             updateData.fullImage = base64FullImage;
           }
@@ -1123,7 +1132,7 @@
       location.reload();
     };
 
-    // 教員退出時の確認モーダル制御
+    // 教員退出時の確認モーダル制御 (NEW)
     window.openTeacherLeaveModal = function() {
       const modal = document.getElementById('leave-confirm-modal');
       modal.classList.remove('hidden');
@@ -1140,7 +1149,7 @@
       }, 200);
     };
 
-    // 教員の退出：ルームID維持の有無を選択可能にする（認証状態は維持）
+    // 要件4: 教員の退出。ルームID維持の有無を選択可能にする
     window.leaveRoomTeacher = async function(shouldDeleteRoom = false) {
       if (unsubscribeRoom) unsubscribeRoom();
       if (unsubscribeStudents) unsubscribeStudents();
@@ -1148,13 +1157,14 @@
 
       if (currentRoomId && shouldDeleteRoom) {
         try {
+          // 「完全に削除して終了」を選択した場合のみ、ルームドキュメントを破棄
           const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
           await deleteDoc(roomRef);
         } catch (err) {
           console.error("教員退出時ルーム削除失敗:", err);
         }
       }
-      // 再サインインの煩わしさを解消するため、signOutは行わずトップに戻る
+      // 「維持したまま退出」の場合は何も削除せずそのままリロード
       location.reload();
     };
 
@@ -1208,6 +1218,7 @@
       if (myRole === 'student') {
         leaveRoom();
       } else if (myRole === 'teacher') {
+        // デフォルトでは「維持したまま退出（false）」で静的クローズ
         leaveRoomTeacher(false);
       }
     });
