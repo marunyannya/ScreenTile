@@ -445,16 +445,6 @@
 
       if (role === 'teacher') {
         try {
-          // ロード中表示に切り替え
-          document.getElementById('loading-text').innerText = "Googleサインインを準備しています...";
-          document.getElementById('loading').classList.remove('hidden');
-          document.getElementById('role-selection').classList.add('hidden');
-          
-          // 【重要】セッションの衝突防止
-          if (auth.currentUser && auth.currentUser.isAnonymous) {
-            await signOut(auth);
-          }
-
           // 既にGoogleログイン済み
           if (auth.currentUser && !auth.currentUser.isAnonymous) {
             currentUser = auth.currentUser;
@@ -462,6 +452,17 @@
             document.getElementById('role-selection').classList.add('hidden');
             document.getElementById('teacher-settings-view').classList.remove('hidden');
             return;
+          }
+          
+          // ロード中表示に切り替え
+          document.getElementById('loading-text').innerText = "Googleサインインを準備しています...";
+          document.getElementById('loading').classList.remove('hidden');
+          document.getElementById('role-selection').classList.add('hidden');
+          
+          // 【重要】セッションの衝突防止
+          //if (auth.currentUser && auth.currentUser.isAnonymous) {
+          if (auth.currentUser?.isAnonymous) {
+            await signOut(auth);
           }
 
           // 未ログインならGoogle認証
