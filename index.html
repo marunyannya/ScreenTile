@@ -184,11 +184,11 @@
         
         <!-- 学生：ルーム画面 -->
         <div id="student-view" class="hidden max-w-xl mx-auto">
-          <!-- ルーム情報入力画面 -->
+          <!-- 学生：ルーム情報入力画面 -->
           <div id="student-join-panel" class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-6">
             <div class="flex items-center gap-3 mb-6">
               <div class="p-2.5 bg-sky-50 text-sky-600 rounded-xl">
-                <i data-lucide="log-in" class="w-6 h-6"></i>
+                <i class="w-6 h-6 fa-solid fa-pen-to-square"></i>
               </div>
               <div>
                 <h2 class="text-xl font-bold text-slate-900">ルーム情報</h2>
@@ -206,7 +206,7 @@
               </div>
               <div class="pt-2 flex gap-3">
                 <button onclick="location.reload()" class="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 rounded-xl transition text-sm">
-                  戻る
+                  戻る（動作がおかしいため使用不可）
                 </button>
                 <button onclick="joinRoom()" class="w-2/3 bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 rounded-xl transition text-sm flex items-center justify-center gap-2">
                   <i class="w-4 h-4 fa-solid fa-arrow-right-to-bracket"></i>
@@ -215,70 +215,51 @@
               </div>
             </div>
           </div>
-
-
           
-
-        <!-- 画面共有コントロール（参加後） -->
-        <div id="student-active-panel" class="hidden bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-          <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
-            <div class="flex items-center gap-3">
-              <div class="w-2.5 h-2.5 rounded-full bg-slate-400" id="sharing-status-dot"></div>
-              <div>
-                <h2 class="text-lg font-bold text-slate-900" id="active-student-display-name">---</h2>
-                <p class="text-xs text-slate-500">ルーム <span id="active-room-display-id" class="font-bold text-indigo-600 font-mono">------</span> に参加中</p>
+          <!-- 学生：共有画面 -->
+          <div id="student-active-panel" class="hidden bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
+              <div class="flex items-center gap-3">
+                <div class="w-2.5 h-2.5 rounded-full bg-slate-400" id="sharing-status-dot"></div>
+                <div>
+                  <h2 class="text-lg font-bold text-slate-900" id="active-student-display-name">---</h2>
+                  <p class="text-xs text-slate-500">ルーム <span id="active-room-display-id" class="font-bold text-indigo-600 font-mono">------</span> に参加中</p>
+                </div>
               </div>
+              <button onclick="leaveRoom()" class="text-xs font-semibold text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg transition">
+                退出する
+              </button>
             </div>
-            <button onclick="leaveRoom()" class="text-xs font-semibold text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg transition">
-              退出する
-            </button>
-          </div>
-
-          <!-- 画面キャプチャ設定 -->
-          <div class="space-y-6">
-            <!-- オンデマンド待機ステータスボード -->
-            <div class="p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
-              <h4 class="text-xs font-bold text-indigo-800 flex items-center gap-1 mb-1.5">
-                <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
-                低燃費オンデマンド待機中
-              </h4>
-              <p class="text-[11px] text-indigo-700 leading-relaxed font-medium">
-                通常時は超軽量なサムネイルのみを送信します。<strong>先生があなたの画面を拡大した瞬間だけ</strong>、高解像度フル画質の画像を撮影して即時アップロードし、閉じると瞬時に自動で削除します。
-              </p>
+            <!-- 画面キャプチャ設定 -->
+            <div class="space-y-6">
+              <!-- 共有プレビュー表示 -->
+              <div class="relative bg-slate-900 rounded-xl overflow-hidden aspect-video flex items-center justify-center">
+                <div class="hidden-video-container">
+                  <video id="capture-video" autoplay playsinline muted></video>
+                </div>
+                <!-- ２つの変換用隠しキャンバス -->
+                <canvas id="thumbnail-canvas" class="hidden"></canvas>
+                <canvas id="full-canvas" class="hidden"></canvas>
+                <img id="local-preview-img" class="w-full h-full object-contain hidden" alt="画面プレビュー">
+                <div id="video-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-slate-400">
+                  <i data-lucide="monitor-off" class="w-12 h-12 mb-3 text-slate-600"></i>
+                  <p class="font-medium text-slate-200">画面が共有されていません</p>
+                </div>
+                <!-- 送信ステータスバッジ -->
+                <div id="sending-indicator" class="absolute top-3 right-3 bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-full flex items-center gap-1.5 opacity-0 transition-opacity duration-300">
+                  <span class="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
+                  <span id="indicator-text">画面キャプチャを送信しました！</span>
+                </div>
+              </div>
+              <button id="start-share-btn" onclick="startScreenShare()" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2">
+                <i data-lucide="screen-share" class="w-5 h-5"></i>
+                画面共有を開始する
+              </button>
             </div>
-
-            <!-- 共有プレビュー表示 -->
-            <div class="relative bg-slate-900 rounded-xl overflow-hidden aspect-video flex items-center justify-center">
-              <div class="hidden-video-container">
-                <video id="capture-video" autoplay playsinline muted></video>
-              </div>
-              <!-- ２つの変換用隠しキャンバス -->
-              <canvas id="thumbnail-canvas" class="hidden"></canvas>
-              <canvas id="full-canvas" class="hidden"></canvas>
-              
-              <img id="local-preview-img" class="w-full h-full object-contain hidden" alt="画面プレビュー">
-              
-              <div id="video-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-slate-400">
-                <i data-lucide="monitor-off" class="w-12 h-12 mb-3 text-slate-600"></i>
-                <p class="font-medium text-slate-200">画面共有が開始されていません</p>
-              </div>
-
-              <!-- 送信ステータスバッジ -->
-              <div id="sending-indicator" class="absolute top-3 right-3 bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-full flex items-center gap-1.5 opacity-0 transition-opacity duration-300">
-                <span class="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
-                <span id="indicator-text">画面キャプチャを送信しました！</span>
-              </div>
-            </div>
-
-            <button id="start-share-btn" onclick="startScreenShare()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2">
-              <i data-lucide="screen-share" class="w-5 h-5"></i>
-              画面共有を開始する
-            </button>
           </div>
         </div>
       </div>
-    </div>
-  </main>
+    </main>
 
   <!-- 拡大画像表示モーダル -->
   <div id="zoom-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden opacity-0 transition-opacity duration-200" onclick="closeZoomModal()">
