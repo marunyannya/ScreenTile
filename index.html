@@ -1139,13 +1139,21 @@
         }
       }
 
-        // 匿名認証解除
+      // 匿名認証解除
       if (auth.currentUser?.isAnonymous) {
         await signOut(auth);
       }
+      // 状態初期化
       currentUser = null;
       studentId = null;
       currentRoomId = null;
+      
+      // 学生画面を初期状態へ戻す
+      document.getElementById('student-active-panel').classList.add('hidden');
+      document.getElementById('student-join-panel').classList.remove('hidden');
+      document.getElementById('student-room-input').value = '';
+      document.getElementById('student-name-input').value = '';
+      // 画面切替
       document.getElementById('student-view').classList.add('hidden');
       document.getElementById('role-selection').classList.remove('hidden');
       updateAuthBadge(null);
