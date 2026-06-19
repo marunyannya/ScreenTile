@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScreenTile - 授業支援画面共有システム</title>
+    <!-- Tailwind CSS (Aesthetics & Fluid Design) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+        }
+        /* スムーズなトランジション効果 */
+        .transition-all-300 {
+            transition: all 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- ヘッダー -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-600 text-white p-2 rounded-xl shadow-md">
+                    <i data-lucide="layout-grid" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-slate-900">ScreenTile</h1>
+                    <p class="text-xs text-slate-500 font-medium">リアルタイム授業画面モニタリング</p>
+                </div>
+            </div>
+            
+            <!-- ロール切り替え（テスト・開発がしやすいよう、先生側と生徒側をその場で切り替え可能にします） -->
+            <div class="bg-slate-100 p-1 rounded-xl flex gap-1">
+                <button id="role-student-btn" class="px-4 py-1.5 rounded-lg text-sm font-semibold transition-all-300 bg-white text-indigo-600 shadow-sm">
+                    <i data-lucide="user" class="w-4 h-4 inline-block mr-1.5 align-text-bottom"></i>学生用画面
+                </button>
+                <button id="role-teacher-btn" class="px-4 py-1.5 rounded-lg text-sm font-semibold transition-all-300 text-slate-600 hover:text-slate-900">
+                    <i data-lucide="graduation-cap" class="w-4 h-4 inline-block mr-1.5 align-text-bottom"></i>先生用画面
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-grow max-w-7xl mx-auto w-full p-4 md:p-6">
+        
+        <!-- ==================== 学生用（STUDENT）画面 ==================== -->
+        <div id="student-section" class="space-y-6">
+            <!-- 接続・ログインカード -->
+            <div id="student-join-card" class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm max-w-md mx-auto">
+                <div class="text-center mb-6">
+                    <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i data-lucide="log-in" class="w-6 h-6"></i>
+                    </div>
+                    <h2 class="text-lg font-bold text-slate-900">授業の部屋に入室する</h2>
+                    <p class="text-sm text-slate-500 mt-1">先生から指定された部屋名と、お名前を入力してください</p>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label for="student-room-input" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">部屋名</label>
+                        <input type="text" id="student-room-input" placeholder="例: math101" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all-300 outline-none text-slate-900 font-medium">
+                    </div>
+                    <div>
+                        <label for="student-name-input" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">あなたのお名前</label>
+                        <input type="text" id="student-name-input" placeholder="例: 山田 太郎" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all-300 outline-none text-slate-900 font-medium">
+                    </div>
+                    <button id="join-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-indigo-600/15 transition-all-300 flex items-center justify-center gap-2 mt-2">
+                        <i data-lucide="door-open" class="w-5 h-5"></i>
+                        入室する
+                    </button>
+                </div>
+            </div>
+
+            <!-- 入室後の画面操作パネル -->
+            <div id="student-active-panel" class="hidden max-w-2xl mx-auto space-y-6">
+                <!-- ステータスバー -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <span class="relative flex h-3 w-3">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                        </span>
+                        <div>
+                            <p class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                                <span id="display-room-name" class="text-indigo-600">部屋名: math101</span>
+                                <span class="text-slate-300">|</span>
+                                <span id="display-student-name">山田 太郎</span>
+                            </p>
+                            <p class="text-xs text-slate-500">授業の部屋に接続しています</p>
+                        </div>
+                    </div>
+                    <button id="leave-btn" class="w-full sm:w-auto bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-600 font-semibold px-4 py-2 rounded-xl transition-all-300 flex items-center justify-center gap-2 text-sm">
+                        <i data-lucide="log-out" class="w-4 h-4"></i>
+                        退出する
+                    </button>
+                </div>
+
+                <!-- 画面共有操作カード -->
+                <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6">
+                    <div class="border-b border-slate-100 pb-4">
+                        <h3 class="text-lg font-bold text-slate-900">画面共有の配信</h3>
+                        <p class="text-sm text-slate-500 mt-1">先生の画面にあなたのデスクトップ、またはアプリ画面を表示します。</p>
+                    </div>
+
+                    <!-- 共有操作コントロール -->
+                    <div class="flex flex-col items-center justify-center py-4 space-y-4">
+                        <!-- ここがバグ修正の対象となる画面プレビュー領域 -->
+                        <div class="relative w-full aspect-video max-w-md bg-slate-100 border border-dashed border-slate-300 rounded-2xl overflow-hidden flex flex-col items-center justify-center transition-all-300 shadow-inner group">
+                            <!-- 未共有時のプレースホルダー -->
+                            <div id="preview-placeholder" class="text-center p-6 space-y-2">
+                                <div class="w-12 h-12 bg-slate-200 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-2 transition-transform group-hover:scale-110 duration-300">
+                                    <i data-lucide="monitor-off" class="w-6 h-6"></i>
+                                </div>
+                                <p class="text-sm font-semibold text-slate-600">画面はまだ共有されていません</p>
+                                <p class="text-xs text-slate-400">「画面共有を開始する」ボタンを押してください</p>
+                            </div>
+                            
+                            <!-- プレビュー画像（バグ修正対象： local-preview-img） -->
+                            <img id="local-preview-img" class="hidden w-full h-full object-contain bg-black" src="" alt="画面プレビュー">
+                            
+                            <!-- 共有中のオーバーレイバッジ -->
+                            <div id="sharing-badge" class="hidden absolute top-3 right-3 bg-emerald-500/90 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md backdrop-blur-sm flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                                配信中
+                            </div>
+                        </div>
+
+                        <!-- 画面共有ボタン（バグ修正対象： start-share-btn） -->
+                        <div class="w-full max-w-md pt-2">
+                            <button id="start-share-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-semibold py-3.5 px-4 rounded-xl shadow-lg shadow-indigo-600/15 transition-all-300 flex items-center justify-center gap-2">
+                                <i data-lucide="tv-2" class="w-5 h-5"></i>
+                                <span>画面共有を開始する</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 先生用（TEACHER）画面 ==================== -->
+        <div id="teacher-section" class="hidden space-y-6">
+            <!-- 部屋の作成カード -->
+            <div id="teacher-init-card" class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm max-w-md mx-auto">
+                <div class="text-center mb-6">
+                    <div class="w-12 h-12 bg-violet-50 text-violet-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i data-lucide="plus-circle" class="w-6 h-6"></i>
+                    </div>
+                    <h2 class="text-lg font-bold text-slate-900">授業の部屋を作成・監視</h2>
+                    <p class="text-sm text-slate-500 mt-1">監視したい部屋の名前を入力して「開始」を押します</p>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label for="teacher-room-input" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">部屋名</label>
+                        <input type="text" id="teacher-room-input" placeholder="例: math101" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all-300 outline-none text-slate-900 font-medium">
+                    </div>
+                    <button id="create-room-btn" class="w-full bg-violet-600 hover:bg-violet-700 active:scale-[0.98] text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-violet-600/15 transition-all-300 flex items-center justify-center gap-2 mt-2">
+                        <i data-lucide="monitor-play" class="w-5 h-5"></i>
+                        授業を開始する
+                    </button>
+                </div>
+            </div>
+
+            <!-- タイル表示（モニタリング）エリア -->
+            <div id="teacher-monitor-panel" class="hidden space-y-6">
+                <!-- 先生側ステータスヘッダー -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2.5 bg-violet-50 text-violet-600 rounded-xl">
+                            <i data-lucide="presentation" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <span id="teacher-display-room">部屋名: math101</span>
+                                <span class="text-xs bg-violet-100 text-violet-700 px-2.5 py-0.5 rounded-full font-semibold">監視中</span>
+                            </h2>
+                            <p class="text-xs text-slate-500 mt-0.5">学生たちの共有画面がリアルタイムで一覧表示されます</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 w-full md:w-auto">
+                        <div class="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-2 rounded-xl flex items-center gap-1.5">
+                            <i data-lucide="users" class="w-4 h-4"></i>
+                            接続学生数: <span id="student-count-badge" class="font-bold text-indigo-600">0</span> 名
+                        </div>
+                        <button id="close-room-btn" class="bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 font-semibold px-4 py-2 rounded-xl transition-all-300 text-sm border border-slate-200">
+                            閉じる
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 画面タイル一覧 (TFabTileと同様のレイアウト) -->
+                <div id="tiles-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <!-- 学生不参加時・または共有なし時の初期ステート -->
+                    <div id="no-students-placeholder" class="col-span-full bg-white border border-slate-200 rounded-3xl p-12 text-center shadow-sm flex flex-col items-center justify-center min-h-[300px]">
+                        <div class="w-14 h-14 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center mb-3">
+                            <i data-lucide="users" class="w-8 h-8"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-700">学生の入室を待っています</h3>
+                        <p class="text-sm text-slate-400 mt-1 max-w-md">学生用画面から同じ部屋名「<span id="target-room-name-placeholder" class="font-semibold text-slate-600"></span>」を入力して入室し、画面共有を開始してください。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- モーダルウィンドウ: 拡大画像用 -->
+    <div id="zoom-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4 transition-all-300">
+        <div class="relative max-w-5xl w-full bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+            <div class="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+                <h3 id="zoom-student-name" class="text-white font-bold text-lg">学生の画面</h3>
+                <button id="close-zoom-btn" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-all-300">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="flex-grow aspect-video bg-black flex items-center justify-center">
+                <img id="zoom-img" class="max-w-full max-h-[75vh] object-contain" src="" alt="拡大画面">
+            </div>
+        </div>
+    </div>
+
+    <!-- 非表示のビデオとキャンバス (学生側の画面キャプチャ抽出用) -->
+    <video id="hidden-video" class="hidden" autoplay playsinline></video>
+    <canvas id="hidden-canvas" class="hidden"></canvas>
+
+    <!-- フッター -->
+    <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-400 font-medium">
+        <div class="max-w-7xl mx-auto px-4">
+            <p>&copy; 2026 ScreenTile App. 全ての端末を並べて視覚化。</p>
+        </div>
+    </footer>
+
+    <!-- Firebase SDKのインポートとアプリ実装 -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+        // --- Firebase 設定 & 初期化 ---
+        // グローバル変数から設定をロード（ない場合はローカルのモックシミュレータにフォールバック）
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : { apiKey: "", authDomain: "mock-screentile.firebaseapp.com", projectId: "mock-screentile", storageBucket: "mock-screentile.appspot.com", messagingSenderId: "123", appId: "1:123:web:123" };
+        
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'screentile-app-v1';
+        
+        let app, auth, db;
+        let isFirebaseAvailable = false;
+
+        // モック用ローカルストレージデータ (Firebaseが有効でない場合のフォールバック用)
+        let mockRooms = {}; 
+
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            isFirebaseAvailable = true;
+        } catch (error) {
+            console.warn("Firebaseの初期化に失敗しました。ローカルメモリによる仮想シミュレーションモードで動作します。", error);
+        }
+
+        // --- アプリケーションのグローバル状態管理 ---
+        let currentUser = null;
+        let currentRoomId = "";
+        let currentStudentName = "";
+        let activeRole = "student"; // 'student' | 'teacher'
+
+        // 画面共有関連のストリーム・タイマー状態
+        let screenStream = null;
+        let shareIntervalId = null;
+        let isSharing = false;
+
+        // Firebase 購読解除関数保持
+        let unsubscribeRoomListener = null;
+
+        // UI 要素のキャッシュ
+        const roleStudentBtn = document.getElementById('role-student-btn');
+        const roleTeacherBtn = document.getElementById('role-teacher-btn');
+        const studentSection = document.getElementById('student-section');
+        const teacherSection = document.getElementById('teacher-section');
+
+        const studentJoinCard = document.getElementById('student-join-card');
+        const studentActivePanel = document.getElementById('student-active-panel');
+        const studentRoomInput = document.getElementById('student-room-input');
+        const studentNameInput = document.getElementById('student-name-input');
+        const joinBtn = document.getElementById('join-btn');
+        const leaveBtn = document.getElementById('leave-btn');
+        const displayRoomName = document.getElementById('display-room-name');
+        const displayStudentName = document.getElementById('display-student-name');
+
+        const startShareBtn = document.getElementById('start-share-btn');
+        const localPreviewImg = document.getElementById('local-preview-img');
+        const previewPlaceholder = document.getElementById('preview-placeholder');
+        const sharingBadge = document.getElementById('sharing-badge');
+
+        const teacherInitCard = document.getElementById('teacher-init-card');
+        const teacherMonitorPanel = document.getElementById('teacher-monitor-panel');
+        const teacherRoomInput = document.getElementById('teacher-room-input');
+        const createRoomBtn = document.getElementById('create-room-btn');
+        const closeRoomBtn = document.getElementById('close-room-btn');
+        const teacherDisplayRoom = document.getElementById('teacher-display-room');
+        const studentCountBadge = document.getElementById('student-count-badge');
+        const tilesContainer = document.getElementById('tiles-container');
+        const noStudentsPlaceholder = document.getElementById('no-students-placeholder');
+        const targetRoomNamePlaceholder = document.getElementById('target-room-name-placeholder');
+
+        const zoomModal = document.getElementById('zoom-modal');
+        const zoomImg = document.getElementById('zoom-img');
+        const zoomStudentName = document.getElementById('zoom-student-name');
+        const closeZoomBtn = document.getElementById('close-zoom-btn');
+
+        const hiddenVideo = document.getElementById('hidden-video');
+        const hiddenCanvas = document.getElementById('hidden-canvas');
+
+        // --- 初期化 & 認証処理 ---
+        window.addEventListener('DOMContentLoaded', async () => {
+            lucide.createIcons();
+            
+            if (isFirebaseAvailable) {
+                // 匿名認証の開始
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (e) {
+                    console.error("認証エラー:", e);
+                }
+                onAuthStateChanged(auth, (user) => {
+                    currentUser = user;
+                });
+            } else {
+                // Firebaseがない場合のダミーユーザー
+                currentUser = { uid: "user_" + Math.random().toString(36).substring(2, 11) };
+            }
+
+            // イベントリスナー登録
+            roleStudentBtn.addEventListener('click', () => switchRole('student'));
+            roleTeacherBtn.addEventListener('click', () => switchRole('teacher'));
+            joinBtn.addEventListener('click', joinRoom);
+            leaveBtn.addEventListener('click', leaveRoom);
+            startShareBtn.addEventListener('click', toggleScreenShare);
+            createRoomBtn.addEventListener('click', openTeacherRoom);
+            closeRoomBtn.addEventListener('click', closeTeacherRoom);
+            closeZoomBtn.addEventListener('click', () => zoomModal.classList.add('hidden'));
+
+            // 学生・先生の初期入力にデフォルト値(ランダム)をセット
+            const randomRoom = "class-" + Math.floor(100 + Math.random() * 900);
+            studentRoomInput.value = randomRoom;
+            teacherRoomInput.value = randomRoom;
+        });
+
+        // --- ロール切り替え ---
+        function switchRole(role) {
+            activeRole = role;
+            if (role === 'student') {
+                roleStudentBtn.className = "px-4 py-1.5 rounded-lg text-sm font-semibold transition-all-300 bg-white text-indigo-600 shadow-sm";
+                roleTeacherBtn.className = "px-4 py-1.5 rounded-lg text-sm font-semibold transition-all-300 text-slate-600 hover:text-slate-900";
+                studentSection.classList.remove('hidden');
+                teacherSection.classList.add('hidden');
+            } else {
+                roleTeacherBtn.className = "px-4 py-1.5 rounded-lg text-sm font-semibold transition-all-300 bg-white text-violet-600 shadow-sm";
+                roleStudentBtn.className = "px-4 py-1.5 rounded-lg text-sm font-semibold transition-all-300 text-slate-600 hover:text-slate-900";
+                teacherSection.classList.remove('hidden');
+                studentSection.classList.add('hidden');
+            }
+        }
+
+        // ==================== [バグ修正箇所：画面共有の完全停止とUI初期化] ====================
+        /**
+         * 画面共有を安全に停止し、関連するすべてのUI（local-preview-img、start-share-btn）を
+         * 完全に初期（リセット）状態に戻す関数です。
+         */
+        function resetSharingUI() {
+            // 1. キャプチャ動作用のインターバルタイマーをクリア
+            if (shareIntervalId) {
+                clearInterval(shareIntervalId);
+                shareIntervalId = null;
+            }
+
+            // 2. 画面共有用のメディアストリームを取得していれば全て停止
+            if (screenStream) {
+                try {
+                    screenStream.getTracks().forEach(track => {
+                        track.stop();
+                        console.log(`トラック [${track.label}] を正常に停止しました`);
+                    });
+                } catch (e) {
+                    console.error("ストリームトラックの停止中にエラー:", e);
+                }
+                screenStream = null;
+            }
+
+            // ビデオ要素のソースもクリア
+            hiddenVideo.srcObject = null;
+
+            // 3. ローカルプレビュー要素（local-preview-img）を完全クリアして非表示化
+            if (localPreviewImg) {
+                localPreviewImg.src = "";
+                localPreviewImg.classList.add('hidden');
+            }
+
+            // 未共有プレースホルダーの再表示
+            if (previewPlaceholder) {
+                previewPlaceholder.classList.remove('hidden');
+            }
+
+            // 配信中バッジの非表示
+            if (sharingBadge) {
+                sharingBadge.classList.add('hidden');
+            }
+
+            // 4. 開始ボタン（start-share-btn）の disabled 状態と表示を完璧に復活
+            if (startShareBtn) {
+                startShareBtn.disabled = false;
+                startShareBtn.classList.remove('opacity-60', 'cursor-not-allowed', 'bg-emerald-600', 'hover:bg-emerald-700');
+                startShareBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                
+                // ボタンの内部テキストをデフォルトに書き換え
+                const btnText = startShareBtn.querySelector('span');
+                if (btnText) {
+                    btnText.textContent = "画面共有を開始する";
+                }
+                
+                // アイコンの修復
+                const btnIcon = startShareBtn.querySelector('i');
+                if (btnIcon) {
+                    btnIcon.setAttribute('data-lucide', 'tv-2');
+                }
+            }
+
+            // 5. 各種内部ステート（画面共有フラグ）の初期化
+            isSharing = false;
+            console.log("【バグ修正】画面共有UIとストリームを完全に初期状態へリセットしました。");
+        }
+
+        // ==================== [学生用ロジック] ====================
+
+        // 入室（部屋に参加）
+        async function joinRoom() {
+            const roomName = studentRoomInput.value.trim();
+            const studentName = studentNameInput.value.trim();
+
+            if (!roomName || !studentName) {
+                alert("部屋名とあなたのお名前を両方入力してください。");
+                return;
+            }
+
+            // 【バグ修正のダブルガード】 
+            // 入室する時点で、前回の古い画面共有状態やボタンのdisabledが残らないよう、
+            // 強制的に画面共有とUIを完全初期化します。
+            resetSharingUI();
+
+            currentRoomId = roomName;
+            currentStudentName = studentName;
+
+            // 表示の更新
+            displayRoomName.textContent = `部屋名: ${currentRoomId}`;
+            displayStudentName.textContent = currentStudentName;
+
+            studentJoinCard.classList.add('hidden');
+            studentActivePanel.classList.remove('hidden');
+
+            // データベースに空のメンバーとして登録（Firestore RULE 1を遵守）
+            await updateMemberData("");
+        }
+
+        // 退出（部屋から退出）
+        async function leaveRoom() {
+            if (!currentRoomId || !currentUser) return;
+
+            // データベースから自分を削除
+            await removeMemberData();
+
+            // 【バグ修正の核心】
+            // 退出時に、画面共有を完全にストップさせ、UI要素(local-preview-img, start-share-btn)をリセットします。
+            resetSharingUI();
+
+            // ルーム変数の初期化
+            currentRoomId = "";
+            currentStudentName = "";
+
+            // UIをログインカード表示へ戻す
+            studentActivePanel.classList.add('hidden');
+            studentJoinCard.classList.remove('hidden');
+            console.log("部屋を退出しました。");
+        }
+
+        // 画面共有の開始／停止トグル
+        async function toggleScreenShare() {
+            if (isSharing) {
+                // すでに配信中の場合は停止
+                resetSharingUI();
+                await updateMemberData(""); // 空画像でデータベースを更新
+            } else {
+                // 新しく画面共有を開始
+                try {
+                    // ディスプレイキャプチャの要求
+                    screenStream = await navigator.mediaDevices.getDisplayMedia({
+                        video: {
+                            width: { ideal: 640 },
+                            height: { ideal: 360 },
+                            frameRate: { ideal: 5 } // 授業用なので低フレームレートで充分
+                        },
+                        audio: false
+                    });
+
+                    // ストリーム終了時の監視（ブラウザ自体の「共有を停止」ボタンを押された時など）
+                    screenStream.getVideoTracks()[0].addEventListener('ended', () => {
+                        console.log("ブラウザから共有が終了されました");
+                        resetSharingUI();
+                        updateMemberData("");
+                    });
+
+                    // ビデオ要素に流してレンダリング
+                    hiddenVideo.srcObject = screenStream;
+                    isSharing = true;
+
+                    // UIの更新（配信中モードへ）
+                    previewPlaceholder.classList.add('hidden');
+                    localPreviewImg.classList.remove('hidden');
+                    sharingBadge.classList.remove('hidden');
+
+                    startShareBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                    startShareBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+                    const btnText = startShareBtn.querySelector('span');
+                    if (btnText) btnText.textContent = "画面共有を一時停止";
+
+                    // 定期的にキャプチャを抽出してサーバーにアップロード
+                    captureAndUpload(); // 即時1回目
+                    shareIntervalId = setInterval(captureAndUpload, 2000); // 2秒おき
+
+                } catch (err) {
+                    console.error("画面キャプチャの取得に失敗しました:", err);
+                    resetSharingUI();
+                }
+            }
+        }
+
+        // ビデオから静止画（Base64 JPEG）を切り出してサーバーに送る
+        async function captureAndUpload() {
+            if (!isSharing || !screenStream) return;
+
+            const videoTrack = screenStream.getVideoTracks()[0];
+            if (videoTrack.readyState !== 'live') {
+                resetSharingUI();
+                return;
+            }
+
+            try {
+                // canvasにビデオの現在のフレームを描画
+                const width = 320; // データベース負荷軽減のためコンパクトなサイズに
+                const height = (hiddenVideo.videoHeight / hiddenVideo.videoWidth) * width || 180;
+                
+                hiddenCanvas.width = width;
+                hiddenCanvas.height = height;
+
+                const ctx = hiddenCanvas.getContext('2d');
+                ctx.drawImage(hiddenVideo, 0, 0, width, height);
+
+                // JPEGとしてBase64変換 (画質0.35に圧縮してFirestoreドキュメント制限1MBを余裕で回避)
+                const base64Image = hiddenCanvas.toDataURL('image/jpeg', 0.35);
+
+                // ローカルのプレビュー画像を更新
+                localPreviewImg.src = base64Image;
+
+                // データベースを更新
+                await updateMemberData(base64Image);
+
+            } catch (e) {
+                console.error("キャプチャ処理エラー:", e);
+            }
+        }
+
+        // --- データベース同期ヘルパー (Firestore / Mock) ---
+        async function updateMemberData(imgBase64) {
+            if (!currentRoomId || !currentUser) return;
+            const uid = currentUser.uid;
+
+            const dataToSave = {
+                uid: uid,
+                name: currentStudentName,
+                image: imgBase64,
+                lastActive: Date.now()
+            };
+
+            if (isFirebaseAvailable) {
+                // Rule 1 に従ったパス設計: /artifacts/{appId}/public/data/rooms
+                const roomDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
+                try {
+                    const roomSnap = await getDoc(roomDocRef);
+                    let members = {};
+                    if (roomSnap.exists()) {
+                        members = roomSnap.data().members || {};
+                    }
+                    members[uid] = dataToSave;
+                    
+                    await setDoc(roomDocRef, { 
+                        roomId: currentRoomId, 
+                        members: members,
+                        updatedAt: Date.now()
+                    }, { merge: true });
+                } catch (e) {
+                    console.error("Firestore更新エラー:", e);
+                }
+            } else {
+                // ローカルモック
+                if (!mockRooms[currentRoomId]) mockRooms[currentRoomId] = { members: {} };
+                mockRooms[currentRoomId].members[uid] = dataToSave;
+                triggerMockSnapshot();
+            }
+        }
+
+        async function removeMemberData() {
+            if (!currentRoomId || !currentUser) return;
+            const uid = currentUser.uid;
+
+            if (isFirebaseAvailable) {
+                const roomDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
+                try {
+                    const roomSnap = await getDoc(roomDocRef);
+                    if (roomSnap.exists()) {
+                        const members = roomSnap.data().members || {};
+                        delete members[uid]; // 自身のデータを削除
+                        await setDoc(roomDocRef, { members: members }, { merge: true });
+                    }
+                } catch (e) {
+                    console.error("Firestore削除エラー:", e);
+                }
+            } else {
+                if (mockRooms[currentRoomId] && mockRooms[currentRoomId].members[uid]) {
+                    delete mockRooms[currentRoomId].members[uid];
+                    triggerMockSnapshot();
+                }
+            }
+        }
+
+
+        // ==================== [先生用（モニター）ロジック] ====================
+
+        function openTeacherRoom() {
+            const roomName = teacherRoomInput.value.trim();
+            if (!roomName) {
+                alert("作成または入室する部屋名を入力してください。");
+                return;
+            }
+
+            currentRoomId = roomName;
+            teacherDisplayRoom.textContent = `部屋名: ${currentRoomId}`;
+            targetRoomNamePlaceholder.textContent = currentRoomId;
+
+            teacherInitCard.classList.add('hidden');
+            teacherMonitorPanel.classList.remove('hidden');
+
+            // リアルタイムリスナーの開始
+            startListeningRoom(currentRoomId);
+        }
+
+        function closeTeacherRoom() {
+            stopListeningRoom();
+            currentRoomId = "";
+            teacherMonitorPanel.classList.add('hidden');
+            teacherInitCard.classList.remove('hidden');
+        }
+
+        // ルームのリアルタイム監視
+        function startListeningRoom(roomId) {
+            stopListeningRoom(); // 既存の監視があれば停止
+
+            if (isFirebaseAvailable) {
+                // Rule 1 に従ったパス: /artifacts/{appId}/public/data/rooms
+                const roomDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomId);
+                
+                unsubscribeRoomListener = onSnapshot(roomDocRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        renderStudentTiles(data.members || {});
+                    } else {
+                        renderStudentTiles({});
+                    }
+                }, (error) => {
+                    console.error("Firestoreの購読エラー:", error);
+                });
+            } else {
+                // モックモードのハンドラを定義
+                window.onMockChange = () => {
+                    const data = mockRooms[roomId] || { members: {} };
+                    renderStudentTiles(data.members);
+                };
+                window.onMockChange();
+            }
+        }
+
+        function stopListeningRoom() {
+            if (unsubscribeRoomListener) {
+                unsubscribeRoomListener();
+                unsubscribeRoomListener = null;
+            }
+            window.onMockChange = null;
+        }
+
+        // TFabTile風に生徒全員の画面をタイルとしてレンダリングする
+        function renderStudentTiles(members) {
+            // タイルのコンテナをクリア（不参加時のプレースホルダー以外）
+            const memberIds = Object.keys(members);
+            studentCountBadge.textContent = memberIds.length;
+
+            if (memberIds.length === 0) {
+                tilesContainer.innerHTML = '';
+                tilesContainer.appendChild(noStudentsPlaceholder);
+                return;
+            }
+
+            // プレースホルダーを非表示にするためにコンテナを真っさらに
+            tilesContainer.innerHTML = '';
+
+            memberIds.forEach(id => {
+                const member = members[id];
+                
+                // 30秒以上更新がない生徒はオフラインとみなす
+                const isOffline = (Date.now() - member.lastActive) > 30000;
+                
+                const tileDiv = document.createElement('div');
+                tileDiv.className = "bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all-300 flex flex-col group cursor-pointer";
+                tileDiv.onclick = () => {
+                    if (member.image) {
+                        zoomStudentName.textContent = `${member.name} の画面`;
+                        zoomImg.src = member.image;
+                        zoomModal.classList.remove('hidden');
+                    }
+                };
+
+                // 生徒用タイルのHTML構造
+                tileDiv.innerHTML = `
+                    <!-- 画面プレビュー -->
+                    <div class="relative aspect-video bg-slate-900 overflow-hidden flex items-center justify-center border-b border-slate-100">
+                        ${member.image 
+                            ? `<img class="w-full h-full object-contain group-hover:scale-[1.02] transition-transform duration-300" src="${member.image}" alt="${member.name} の画面">`
+                            : `<div class="text-center p-4 text-slate-500">
+                                 <i data-lucide="tv-off" class="w-8 h-8 mx-auto mb-1 text-slate-600"></i>
+                                 <p class="text-xs font-semibold">画面未共有</p>
+                               </div>`
+                        }
+                        
+                        <!-- オフライン/活動中ステータスバッジ -->
+                        <div class="absolute bottom-2 right-2 flex gap-1">
+                            ${isOffline 
+                                ? `<span class="bg-amber-500/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-md backdrop-blur-sm">最終確認30秒前</span>`
+                                : member.image 
+                                    ? `<span class="bg-emerald-500/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-md backdrop-blur-sm flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>共有中</span>`
+                                    : `<span class="bg-slate-700/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-md backdrop-blur-sm">待機中</span>`
+                            }
+                        </div>
+                    </div>
+                    <!-- 生徒情報ラベル -->
+                    <div class="p-3 flex items-center justify-between bg-slate-50">
+                        <span class="font-bold text-sm text-slate-800 truncate">${escapeHTML(member.name)}</span>
+                        <div class="flex gap-1.5">
+                            <span class="text-[10px] text-slate-400 font-medium">ID: ${id.substring(0, 5)}</span>
+                        </div>
+                    </div>
+                `;
+
+                tilesContainer.appendChild(tileDiv);
+            });
+
+            // 動的に追加した要素のアイコンをアクティベート
+            lucide.createIcons();
+        }
+
+        // --- モックデータ変更時のシミュレータトリガー ---
+        function triggerMockSnapshot() {
+            if (typeof window.onMockChange === 'function') {
+                window.onMockChange();
+            }
+        }
+
+        // HTMLエスケープ（XSS対策）
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+    </script>
+</body>
+</html>
