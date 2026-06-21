@@ -345,13 +345,41 @@
     import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    let firebaseConfig = {};
-    const isEnvConfigAvailable = typeof __firebase_config !== 'undefined' && __firebase_config;
-    
-    if (isEnvConfigAvailable) {
-      firebaseConfig = JSON.parse(__firebase_config);
-    } else {
-      firebaseConfig = {
+    // --- Firebase 設定の読み込み ---
+    // 優先順位: ① ?config=URL のJSONファイル → ② 環境変数(__firebase_config) → ③ ハードコード(開発用フォールバック)
+    function showConfigError(message) {
+      document.getElementById('loading').innerHTML = `
+        <div class="p-4 max-w-md bg-red-50 border border-red-200 text-red-800 rounded-xl">
+          <h3 class="font-bold text-base mb-1">Firebase 設定エラー</h3>
+          <p class="text-xs leading-relaxed">${message}</p>
+        </div>
+      `;
+    }
+
+    async function loadFirebaseConfig() {
+      // ① URLパラメータ ?config=... が指定されている場合はJSONをfetchする
+      const params = new URLSearchParams(window.location.search);
+      const configUrl = params.get('config');
+      if (configUrl) {
+        try {
+          const res = await fetch(configUrl);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const cfg = await res.json();
+          if (!cfg.apiKey) throw new Error('apiKey が見つかりません');
+          return cfg;
+        } catch (err) {
+          showConfigError(`設定ファイルの読み込みに失敗しました。<br>URL: ${configUrl}<br>原因: ${err.message}`);
+          throw err;
+        }
+      }
+
+      // ② 環境変数(__firebase_config)が利用可能な場合
+      if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+        return JSON.parse(__firebase_config);
+      }
+
+      // ③ ハードコード（開発用フォールバック）
+      const fallback = {
         apiKey: "AIzaSyC6fDndKJhPLO5qfYs_491NePjp_avGMfw",
         authDomain: "tfabtileclone.firebaseapp.com",
         projectId: "tfabtileclone",
@@ -360,18 +388,14 @@
         appId: "1:53819058486:web:280c4feb48a24c0e4e6b97",
         measurementId: "G-EHXF6BVKYK"
       };
+      if (!fallback.apiKey || fallback.apiKey.startsWith("YOUR_")) {
+        showConfigError('Firebase の設定情報がありません。?config=URL を指定するか、ソースコード内の設定値を書き換えてください。');
+        throw new Error("Firebase config error.");
+      }
+      return fallback;
     }
 
-    if (!isEnvConfigAvailable && (!firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith("YOUR_"))) {
-      document.getElementById('loading').innerHTML = `
-        <div class="p-4 max-w-md bg-red-50 border border-red-200 text-red-800 rounded-xl">
-          <h3 class="font-bold text-base mb-1">Firebase 設定が必要です</h3>
-          <p class="text-xs leading-relaxed">プログラム内の Firebase 設定情報をご自身のプロジェクト値に書き換えてください。</p>
-        </div>
-      `;
-      throw new Error("Firebase config error.");
-    }
-
+    const firebaseConfig = await loadFirebaseConfig();
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
