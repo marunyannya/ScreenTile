@@ -1006,27 +1006,48 @@
       lucide.createIcons();
     };
 
-    // ② 切断時の処理
-    window.stopScreenShare = async function() {
+    // 【共通】画面共有のUIと localStream をリセットする（Firestore操作なし）
+    function resetScreenShareUI() {
       if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
         localStream = null;
       }
-
       const video = document.getElementById('capture-video');
       video.srcObject = null;
       document.getElementById('local-preview-img').classList.add('hidden');
       document.getElementById('video-placeholder').classList.remove('hidden');
-
       const startBtn = document.getElementById('start-share-btn');
       startBtn.innerHTML = `<i data-lucide="screen-share" class="w-5 h-5"></i> 画面共有を開始する`;
-      startBtn.className = "w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2";
+      startBtn.className = "w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2";
       startBtn.onclick = startScreenShare;
-
       document.getElementById('sending-indicator').classList.add('opacity-0');
       document.getElementById('sharing-status-dot').className = "w-2.5 h-2.5 rounded-full bg-slate-400";
+    }
 
-      // ② 切断時：ドキュメント内の画像をクリア
+    // 【共通】学生セッション全体をリセットする（変数・リスナー・トークン・画面遷移）
+    function resetStudentSession() {
+      if (unsubscribeRoom) { unsubscribeRoom(); unsubscribeRoom = null; }
+      if (unsubscribeStudents) { unsubscribeStudents(); unsubscribeStudents = null; }
+      if (unsubscribeZoomImage) { unsubscribeZoomImage(); unsubscribeZoomImage = null; }
+      currentUser = null;
+      studentId = null;
+      currentRoomId = null;
+      lastAllRequestToken = "";
+      lastSingleRequestToken = "";
+      document.getElementById('student-active-panel').classList.add('hidden');
+      document.getElementById('student-join-panel').classList.remove('hidden');
+      document.getElementById('student-room-input').value = '';
+      document.getElementById('student-name-input').value = '';
+      document.getElementById('student-view').classList.add('hidden');
+      document.getElementById('role-selection').classList.remove('hidden');
+      updateAuthBadge(null);
+    }
+
+    // ② 切断時の処理（画面共有ボタンから呼ばれる）
+    window.stopScreenShare = async function() {
+      resetScreenShareUI();
+
+      // 切断時：Firestore上の画像データをクリア
       if (currentUser && currentRoomId && studentId) {
         try {
           const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
@@ -1123,27 +1144,11 @@
 
     // 学生の退出時
     window.leaveRoom = async function() {
-      // 画面共有中の場合、UIも含めて完全にリセット（ボタン・プレビュー・ドット・localStream）
-      if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-        localStream = null;
-      }
-      // 画面共有UIを初期状態に戻す
-      const video = document.getElementById('capture-video');
-      video.srcObject = null;
-      document.getElementById('local-preview-img').classList.add('hidden');
-      document.getElementById('video-placeholder').classList.remove('hidden');
-      const startBtn = document.getElementById('start-share-btn');
-      startBtn.innerHTML = `<i data-lucide="screen-share" class="w-5 h-5"></i> 画面共有を開始する`;
-      startBtn.className = "w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2";
-      startBtn.onclick = startScreenShare;
-      document.getElementById('sending-indicator').classList.add('opacity-0');
-      document.getElementById('sharing-status-dot').className = "w-2.5 h-2.5 rounded-full bg-slate-400";
+      // ① 画面共有UIをリセット（共有中・非共有中にかかわらず常に実行）
+      resetScreenShareUI();
 
-      if (unsubscribeRoom) unsubscribeRoom();
-      if (unsubscribeStudents) unsubscribeStudents();
-      if (unsubscribeZoomImage) unsubscribeZoomImage();
-      
+      // ② Firestoreの学生ドキュメントを削除（退出なのでdocごと消す）
+      //    ※ studentId / currentRoomId を resetStudentSession() より先に使うためここで実行
       if (currentRoomId && studentId) {
         try {
           const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
@@ -1153,28 +1158,13 @@
         }
       }
 
-      // 匿名認証解除
+      // ③ 匿名認証を解除
       if (auth.currentUser?.isAnonymous) {
         await signOut(auth);
       }
-      // 状態初期化
-      currentUser = null;
-      studentId = null;
-      currentRoomId = null;
-      lastAllRequestToken = "";
-      lastSingleRequestToken = "";
-      
-      // 学生画面を初期状態へ戻す
-      document.getElementById('student-active-panel').classList.add('hidden');
-      document.getElementById('student-join-panel').classList.remove('hidden');
-      document.getElementById('student-room-input').value = '';
-      document.getElementById('student-name-input').value = '';
-      // 画面切替
-      document.getElementById('student-view').classList.add('hidden');
-      document.getElementById('role-selection').classList.remove('hidden');
-      updateAuthBadge(null);
-      //await signOut(auth);
-      //location.reload();
+
+      // ④ セッション全体をリセット（変数・リスナー・画面遷移）
+      resetStudentSession();
     };
 
     // 教員退出時の確認モーダル制御 (NEW)
@@ -1194,12 +1184,9 @@
       }, 200);
     };
 
-    // 要件4: 教員の退出。ルームID維持の有無を選択可能にする
+    // 教員の退出。ルームID維持の有無を選択可能にする
+    // ※ location.reload() でページごと破棄されるため、リスナー解除は不要
     window.leaveRoomTeacher = async function(shouldDeleteRoom = false) {
-      if (unsubscribeRoom) unsubscribeRoom();
-      if (unsubscribeStudents) unsubscribeStudents();
-      if (unsubscribeZoomImage) unsubscribeZoomImage();
-
       if (currentRoomId && shouldDeleteRoom) {
         try {
           // 「完全に削除して終了」を選択した場合のみ、ルームドキュメントを破棄
@@ -1209,7 +1196,7 @@
           console.error("教員退出時ルーム削除失敗:", err);
         }
       }
-      // 「維持したまま退出」の場合は何も削除せずそのままリロード
+      // リロードでリスナー・変数・UI がすべてリセットされる
       location.reload();
     };
 
@@ -1241,16 +1228,6 @@
       );
     }
 
-    function resetStudentState() {
-  studentId = null;
-  currentRoomId = null;
-
-  if (localStream) {
-    localStream.getTracks().forEach(track => track.stop());
-    localStream = null;
-  }
-}
-    
     function showCustomAlert(message) {
       const alertDiv = document.createElement('div');
       alertDiv.className = "fixed top-5 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-xl z-50 flex items-center gap-3 border border-slate-700 fade-in max-w-lg w-[90%]";
