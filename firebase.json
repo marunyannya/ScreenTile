@@ -1,9 +1,9 @@
 {
-  apiKey: "AIzaSyC6fDndKJhPLO5qfYs_491NePjp_avGMfw",
-  authDomain: "tfabtileclone.firebaseapp.com",
-  projectId: "tfabtileclone",
-  storageBucket: "tfabtileclone.firebasestorage.app",
-  messagingSenderId: "53819058486",
-  appId: "1:53819058486:web:280c4feb48a24c0e4e6b97",
-  measurementId: "G-EHXF6BVKYK"
+  "apiKey": "AIzaSyC6fDndKJhPLO5qfYs_491NePjp_avGMfw",
+  "authDomain": "tfabtileclone.firebaseapp.com",
+  "projectId": "tfabtileclone",
+  "storageBucket": "tfabtileclone.firebasestorage.app",
+  "messagingSenderId": "53819058486",
+  "appId": "1:53819058486:web:280c4feb48a24c0e4e6b97",
+  "measurementId": "G-EHXF6BVKYK"
 }
