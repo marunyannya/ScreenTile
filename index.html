@@ -74,7 +74,7 @@
                 <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl w-fit mb-4">
                   <i class="w-8 h-8 fa-solid fa-user-tie"></i>
                 </div>
-                <h3 class="text-xl font-bold mb-2 text-slate-900">教員（要Googleログイン）</h3>
+                <h3 class="text-xl font-bold mb-2 text-slate-900">教員</h3>
                 <p class="text-slate-600 text-sm mb-6 leading-relaxed">
                   ルームを作成して入室します。既存のルームを使用することも可能です。
                 </p>
@@ -339,7 +339,7 @@
     
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-      import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+      import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
       import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
       
       // --- Firebase 設定の読み込みエラーメッセージ
@@ -388,18 +388,18 @@
       let lastAllRequestToken = ""; // 学生側で前回処理した全体要求トークン
       let lastSingleRequestToken = ""; // 学生側で前回処理した個別要求トークン
 
-    // 各種初期化時のセキュリティバッジ表示
+    // 認証バッジ表示（教員・学生ともに匿名認証のため、myRole で判定する）
     const updateAuthBadge = (user) => {
       const badge = document.getElementById('auth-badge');
       if (!user) {
         badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-400"></span> 未ログイン`;
         badge.className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200";
-      } else if (user.isAnonymous) {
+      } else if (myRole === 'teacher') {
+        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> 教員`;
+        badge.className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200";
+      } else {
         badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-sky-500"></span> 学生`;
         badge.className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-sky-50 text-sky-700 border border-sky-200";
-      } else {
-        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> 教員 (${escapeHTML(user.displayName || "Googleユーザー")})`;
-        badge.className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200";
       }
     };
 
@@ -416,88 +416,32 @@
       lucide.createIcons();
     });
 
-    // ロール決定時の認証フロー分岐（セッションのクリーン切り替え）
+    // ロール決定時の認証フロー（教員・学生ともに匿名認証）
     window.selectRole = async function(role) {
       myRole = role;
+      try {
+        document.getElementById('loading-text').innerText = "セキュア接続を確立しています...";
+        document.getElementById('loading').classList.remove('hidden');
+        document.getElementById('role-selection').classList.add('hidden');
 
-      if (role === 'teacher') {
-        try {
-          // 既にGoogleログイン済み
-          if (auth.currentUser && !auth.currentUser.isAnonymous) {
-            currentUser = auth.currentUser;
-            updateAuthBadge(currentUser);
-            document.getElementById('role-selection').classList.add('hidden');
-            document.getElementById('teacher-settings-view').classList.remove('hidden');
-            return;
-          }
-          
-          // ロード中表示に切り替え
-          document.getElementById('loading-text').innerText = "Googleサインインを準備しています...";
-          document.getElementById('loading').classList.remove('hidden');
-          document.getElementById('role-selection').classList.add('hidden');
-          
-          // 【重要】セッションの衝突防止
-          //if (auth.currentUser && auth.currentUser.isAnonymous) {
-          if (auth.currentUser?.isAnonymous) {
-            await signOut(auth);
-          }
-
-          // 未ログインならGoogle認証
-          const provider = new GoogleAuthProvider();
-          const result = await signInWithPopup(auth, provider);
+        if (!auth.currentUser) {
+          const result = await signInAnonymously(auth);
           currentUser = result.user;
-          updateAuthBadge(currentUser);
-          
-          document.getElementById('loading').classList.add('hidden');
-          // 設定画面を表示 (NEW)
+        }
+        updateAuthBadge(currentUser);
+
+        document.getElementById('loading').classList.add('hidden');
+        if (role === 'teacher') {
           document.getElementById('teacher-settings-view').classList.remove('hidden');
-        } catch (error) {
-          console.error("Googleサインイン失敗:", error);
-          
-          let alertMsg = `Google認証に失敗しました。理由: ${error.message} (Code: ${error.code})`;
-          
-          if (error.code === 'auth/unauthorized-domain') {
-            const currentHost = window.location.hostname;
-            alertMsg = `【Firebaseの設定ミスです】\nこのドメイン『${currentHost}』が、Firebaseコンソールに許可されていません。\n\n◆ 解決方法:\n1. Firebaseコンソールにアクセス\n2. 「Authentication」 ＞ 「設定」 ＞ 「承認済みドメイン」に移動\n3. 『${currentHost}』を追加（保存）してください。\n\n※反映されるまで数分かかる場合があります。`;
-          } else if (error.code === 'auth/popup-blocked') {
-            alertMsg = `【ポップアップブロック】\nブラウザによってGoogleサインイン画面の表示が拒否されました。\n\n◆ 解決方法:\nアドレスバーの端などに表示されるアイコンをクリックし、ポップアップを「常に許可」にしてから再度お試しください。`;
-          } else if (error.code === 'auth/cancelled-popup-request') {
-            alertMsg = `Googleサインイン用のポップアップウィンドウが閉じられたか、キャンセルされました。再度ボタンをクリックしてください。`;
-          } else if (error.code === 'auth/operation-not-allowed') {
-            alertMsg = `【Firebaseの設定ミスです】\nFirebaseコンソールでGoogleログインが有効化されていません。\n\n◆ 解決方法:\n1. Firebaseコンソール「Authentication」 ＞ 「Sign-in method」を開く\n2. Googleを有効（Enabled）にしてください。`;
-          }
-          
-          showCustomAlert(alertMsg);
-          document.getElementById('loading').classList.add('hidden');
-          document.getElementById('role-selection').classList.remove('hidden');
-          myRole = null;
-        }
-      } else {
-        // 学生側は匿名認証
-        try {
-          document.getElementById('loading-text').innerText = "セキュア接続を確立しています...";
-          document.getElementById('loading').classList.remove('hidden');
-          document.getElementById('role-selection').classList.add('hidden');
-          
-          if (auth.currentUser && !auth.currentUser.isAnonymous) {
-            await signOut(auth);
-          }
-          
-          if (!auth.currentUser) {
-            const result = await signInAnonymously(auth);
-            currentUser = result.user;
-          }
-          updateAuthBadge(currentUser);
-          
-          document.getElementById('loading').classList.add('hidden');
+        } else {
           document.getElementById('student-view').classList.remove('hidden');
-        } catch (error) {
-          console.error("匿名認証失敗:", error);
-          showCustomAlert("ログイン処理に失敗しました。ページを再読み込みしてください。");
-          document.getElementById('loading').classList.add('hidden');
-          document.getElementById('role-selection').classList.remove('hidden');
-          myRole = null;
         }
+      } catch (error) {
+        console.error("匿名認証失敗:", error);
+        showCustomAlert("ログイン処理に失敗しました。ページを再読み込みしてください。");
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('role-selection').classList.remove('hidden');
+        myRole = null;
       }
       lucide.createIcons();
     };
@@ -516,12 +460,15 @@
       updateAuthBadge(null);
     };
 
-    window.backToTeacherRoleSelection = function() {
+    window.backToTeacherRoleSelection = async function() {
+      if (auth.currentUser?.isAnonymous) {
+        await signOut(auth);
+      }
       myRole = null;
-      // 画面切り替え
+      currentUser = null;
       document.getElementById('teacher-settings-view').classList.add('hidden');
       document.getElementById('role-selection').classList.remove('hidden');
-      // Google認証は維持
+      updateAuthBadge(null);
     };
     
 
@@ -1187,7 +1134,6 @@
     };
 
     // 教員の退出。ルームID維持の有無を選択可能にする
-    // ※ location.reload() でページごと破棄されるため、リスナー解除は不要
     window.leaveRoomTeacher = async function(shouldDeleteRoom = false) {
       if (currentRoomId && shouldDeleteRoom) {
         try {
@@ -1198,7 +1144,10 @@
           console.error("教員退出時ルーム削除失敗:", err);
         }
       }
-      // リロードでリスナー・変数・UI がすべてリセットされる
+      // 匿名認証を解除してからリロード（リロードでリスナー・変数・UIもリセットされる）
+      if (auth.currentUser?.isAnonymous) {
+        await signOut(auth);
+      }
       location.reload();
     };
 
