@@ -1123,9 +1123,23 @@
 
     // 学生の退出時
     window.leaveRoom = async function() {
+      // 画面共有中の場合、UIも含めて完全にリセット（ボタン・プレビュー・ドット・localStream）
       if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
+        localStream = null;
       }
+      // 画面共有UIを初期状態に戻す
+      const video = document.getElementById('capture-video');
+      video.srcObject = null;
+      document.getElementById('local-preview-img').classList.add('hidden');
+      document.getElementById('video-placeholder').classList.remove('hidden');
+      const startBtn = document.getElementById('start-share-btn');
+      startBtn.innerHTML = `<i data-lucide="screen-share" class="w-5 h-5"></i> 画面共有を開始する`;
+      startBtn.className = "w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2";
+      startBtn.onclick = startScreenShare;
+      document.getElementById('sending-indicator').classList.add('opacity-0');
+      document.getElementById('sharing-status-dot').className = "w-2.5 h-2.5 rounded-full bg-slate-400";
+
       if (unsubscribeRoom) unsubscribeRoom();
       if (unsubscribeStudents) unsubscribeStudents();
       if (unsubscribeZoomImage) unsubscribeZoomImage();
@@ -1147,6 +1161,8 @@
       currentUser = null;
       studentId = null;
       currentRoomId = null;
+      lastAllRequestToken = "";
+      lastSingleRequestToken = "";
       
       // 学生画面を初期状態へ戻す
       document.getElementById('student-active-panel').classList.add('hidden');
