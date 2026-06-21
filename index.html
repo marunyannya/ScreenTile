@@ -38,7 +38,7 @@
           </div>
           <div>
             <h1 class="text-xl font-bold tracking-tight text-slate-900">ScreenTile</h1>
-            <p class="text-xs text-slate-500"> パケット制限モデル ver.1.0.0</p>
+            <p class="text-xs text-slate-500"> Firebase設定外部読み込みモデル ver.1.0.0</p>
           </div>
         </div>
         <div class="flex items-center gap-3">
@@ -206,7 +206,7 @@
               </div>
               <div class="pt-2 flex gap-3">
                 <button onclick="backToRoleSelection()" class="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 rounded-xl transition text-sm">
-                  戻る（動作がおかしいため使用不可）
+                  戻る
                 </button>
                 <button onclick="joinRoom()" class="w-2/3 bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 rounded-xl transition text-sm flex items-center justify-center gap-2">
                   <i class="w-4 h-4 fa-solid fa-arrow-right-to-bracket"></i>
@@ -260,107 +260,107 @@
         </div>
       </div>
     </main>
-
-  <!-- 拡大画像表示モーダル -->
-  <div id="zoom-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden opacity-0 transition-opacity duration-200" onclick="closeZoomModal()">
-    <div class="bg-white rounded-2xl max-w-4xl w-full overflow-hidden shadow-2xl flex flex-col" onclick="event.stopPropagation()">
-      <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-        <div class="flex items-center gap-2.5">
-          <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" id="modal-status-dot"></div>
-          <div>
-            <h3 class="font-bold text-slate-900 text-base" id="modal-student-name">学生の画面</h3>
-            <p class="text-xs text-slate-500" id="modal-last-updated">最終更新: --:--:--</p>
+    
+    <!-- 拡大画像表示モーダル -->
+    <div id="zoom-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden opacity-0 transition-opacity duration-200" onclick="closeZoomModal()">
+      <div class="bg-white rounded-2xl max-w-4xl w-full overflow-hidden shadow-2xl flex flex-col" onclick="event.stopPropagation()">
+        <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+          <div class="flex items-center gap-2.5">
+            <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" id="modal-status-dot"></div>
+            <div>
+              <h3 class="font-bold text-slate-900 text-base" id="modal-student-name">学生の画面</h3>
+              <p class="text-xs text-slate-500" id="modal-last-updated">最終更新: --:--:--</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="modal-refresh-btn" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-1.5 px-3 rounded-lg text-xs transition flex items-center gap-1">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+              この学生の画面のみ取得
+            </button>
+            <button onclick="closeZoomModal()" class="p-1.5 hover:bg-slate-200 rounded-lg transition text-slate-400 hover:text-slate-600">
+              <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
           </div>
         </div>
-        <div class="flex items-center gap-2">
-          <button id="modal-refresh-btn" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-1.5 px-3 rounded-lg text-xs transition flex items-center gap-1">
-            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-            この人の画面を再取得
+        <div class="bg-slate-950 aspect-video flex items-center justify-center relative">
+          <img id="modal-image" class="w-full h-full object-contain hidden" src="" alt="拡大画面プレビュー">
+          <!-- 高画質フル画像のロードインジケーター -->
+          <div id="modal-image-loading" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
+            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-white mb-3"></div>
+            <p class="text-xs text-white font-medium">学生からの高画質アップロードをオンデマンド待機中...</p>
+          </div>
+          <div id="modal-loading-overlay" class="absolute inset-0 bg-slate-900/60 flex flex-col items-center justify-center text-white hidden">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-2"></div>
+            <span class="text-xs">リクエストを送信中...</span>
+          </div>
+        </div>
+        <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-xs text-slate-500">
+          <span class="flex items-center gap-1.5 font-medium text-slate-600">
+            <i data-lucide="shield-check" class="w-4 h-4 text-emerald-500"></i>
+            極限省パケット技術：教員がこの拡大窓を開いている間のみ、学生側から高解像度データが提供され、閉じると消去されます。
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 教員用：退出時のクリーンアップ決定モーダル -->
+    <div id="leave-confirm-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden opacity-0 transition-opacity duration-200" onclick="closeTeacherLeaveModal()">
+      <div class="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl p-6" onclick="event.stopPropagation()">
+        <div class="flex items-center gap-3 mb-4 text-red-600">
+          <div class="p-2 bg-red-50 rounded-xl">
+            <i data-lucide="log-out" class="w-6 h-6"></i>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900">退出時の処理を選択</h3>
+        </div>
+        <p class="text-slate-600 text-sm mb-6 leading-relaxed">
+          このルームを終了して退出します。学生が後から再アクセスしたり、次回あなたが同じナンバーで講義を再開できるように、ルームIDデータを残しますか？
+        </p>
+        <div class="space-y-2.5">
+          <button onclick="leaveRoomTeacher(false)" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 px-4 rounded-xl text-sm transition flex items-center justify-center gap-2">
+            <i data-lucide="bookmark" class="w-4 h-4 text-indigo-600"></i>
+            ルームIDを維持したまま退出
           </button>
-          <button onclick="closeZoomModal()" class="p-1.5 hover:bg-slate-200 rounded-lg transition text-slate-400 hover:text-slate-600">
-            <i data-lucide="x" class="w-5 h-5"></i>
+          <button onclick="leaveRoomTeacher(true)" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl text-sm transition flex items-center justify-center gap-2">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+            ルームIDを完全に削除して終了
+          </button>
+          <button onclick="closeTeacherLeaveModal()" class="w-full bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 font-semibold py-2 px-4 rounded-xl text-xs transition">
+            キャンセル
           </button>
         </div>
       </div>
-      <div class="bg-slate-950 aspect-video flex items-center justify-center relative">
-        <img id="modal-image" class="w-full h-full object-contain hidden" src="" alt="拡大画面プレビュー">
+    </div>
+    
+    <footer class="bg-white border-t border-slate-100 py-6 mt-12 text-center text-xs text-slate-400">
+      <div class="max-w-7xl mx-auto px-4">
+        <p>&copy; 2026 Rina Hayashi</p>
+      </div>
+    </footer>
+    
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+      import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+      import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+      
+      // --- Firebase 設定の読み込みエラーメッセージ
+      function showConfigError(message) {
+        document.getElementById('loading').innerHTML = `
+          <div class="p-4 max-w-md bg-red-50 border border-red-200 text-red-800 rounded-xl">
+            <h3 class="font-bold text-base mb-1">Firebase 設定エラー</h3>
+            <p class="text-xs leading-relaxed">${message}</p>
+          </div>
+        `;
+      }
+      
+      // --- Firebase 設定の読み込み (?config=URL 必須) 
+      async function loadFirebaseConfig() {
+        const params = new URLSearchParams(window.location.search);
+        const configUrl = params.get('config');
         
-        <!-- 高画質フル画像のロードインジケーター -->
-        <div id="modal-image-loading" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
-          <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-white mb-3"></div>
-          <p class="text-xs text-white font-medium">学生からの高画質アップロードをオンデマンド待機中...</p>
-        </div>
-
-        <div id="modal-loading-overlay" class="absolute inset-0 bg-slate-900/60 flex flex-col items-center justify-center text-white hidden">
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-2"></div>
-          <span class="text-xs">リクエストを送信中...</span>
-        </div>
-      </div>
-      <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-xs text-slate-500">
-        <span class="flex items-center gap-1.5 font-medium text-slate-600">
-          <i data-lucide="shield-check" class="w-4 h-4 text-emerald-500"></i>
-          極限省パケット技術：教員がこの拡大窓を開いている間のみ、学生側から高解像度データが提供され、閉じると消去されます。
-        </span>
-      </div>
-    </div>
-  </div>
-
-  <!-- 教員用：退出時のクリーンアップ決定モーダル (NEW) -->
-  <div id="leave-confirm-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden opacity-0 transition-opacity duration-200" onclick="closeTeacherLeaveModal()">
-    <div class="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl p-6" onclick="event.stopPropagation()">
-      <div class="flex items-center gap-3 mb-4 text-red-600">
-        <div class="p-2 bg-red-50 rounded-xl">
-          <i data-lucide="log-out" class="w-6 h-6"></i>
-        </div>
-        <h3 class="text-lg font-bold text-slate-900">退出時の処理を選択</h3>
-      </div>
-      <p class="text-slate-600 text-sm mb-6 leading-relaxed">
-        このルームを終了して退出します。学生が後から再アクセスしたり、次回あなたが同じナンバーで講義を再開できるように、ルームIDデータを残しますか？
-      </p>
-      <div class="space-y-2.5">
-        <button onclick="leaveRoomTeacher(false)" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 px-4 rounded-xl text-sm transition flex items-center justify-center gap-2">
-          <i data-lucide="bookmark" class="w-4 h-4 text-indigo-600"></i>
-          ルームIDを維持したまま退出
-        </button>
-        <button onclick="leaveRoomTeacher(true)" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl text-sm transition flex items-center justify-center gap-2">
-          <i data-lucide="trash-2" class="w-4 h-4"></i>
-          ルームIDを完全に削除して終了
-        </button>
-        <button onclick="closeTeacherLeaveModal()" class="w-full bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 font-semibold py-2 px-4 rounded-xl text-xs transition">
-          キャンセル
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <footer class="bg-white border-t border-slate-100 py-6 mt-12 text-center text-xs text-slate-400">
-    <div class="max-w-7xl mx-auto px-4">
-      <p>&copy; 2026 Rina Hayashi</p>
-    </div>
-  </footer>
-
-  <!-- Firebase SDK Modules -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-    // --- Firebase 設定の読み込み ---
-    // 優先順位: ① ?config=URL のJSONファイル → ② 環境変数(__firebase_config) → ③ ハードコード(開発用フォールバック)
-    function showConfigError(message) {
-      document.getElementById('loading').innerHTML = `
-        <div class="p-4 max-w-md bg-red-50 border border-red-200 text-red-800 rounded-xl">
-          <h3 class="font-bold text-base mb-1">Firebase 設定エラー</h3>
-          <p class="text-xs leading-relaxed">${message}</p>
-        </div>
-      `;
-    }
-
-    async function loadFirebaseConfig() {
-      // ① URLパラメータ ?config=... が指定されている場合はJSONをfetchする
-      const params = new URLSearchParams(window.location.search);
-      const configUrl = params.get('config');
-      if (configUrl) {
+        if (!configUrl) {
+          showConfigError('URLに <code>?config=https://...</code> の形式で Firebase 設定ファイルのURLを指定してください。');
+          throw new Error("No config URL specified.");
+        }
         try {
           const res = await fetch(configUrl);
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -373,42 +373,20 @@
         }
       }
 
-      // ② 環境変数(__firebase_config)が利用可能な場合
-      if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-        return JSON.parse(__firebase_config);
-      }
-
-      // ③ ハードコード（開発用フォールバック）
-      const fallback = {
-        apiKey: "AIzaSyC6fDndKJhPLO5qfYs_491NePjp_avGMfw",
-        authDomain: "tfabtileclone.firebaseapp.com",
-        projectId: "tfabtileclone",
-        storageBucket: "tfabtileclone.firebasestorage.app",
-        messagingSenderId: "53819058486",
-        appId: "1:53819058486:web:280c4feb48a24c0e4e6b97",
-        measurementId: "G-EHXF6BVKYK"
-      };
-      if (!fallback.apiKey || fallback.apiKey.startsWith("YOUR_")) {
-        showConfigError('Firebase の設定情報がありません。?config=URL を指定するか、ソースコード内の設定値を書き換えてください。');
-        throw new Error("Firebase config error.");
-      }
-      return fallback;
-    }
-
-    const firebaseConfig = await loadFirebaseConfig();
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'tfabtile-clone';
-
-    let currentUser = null;
-    let myRole = null; 
-    let currentRoomId = null;
-    let studentId = null; 
-    let localStream = null;
-
-    let lastAllRequestToken = ""; // 学生側で前回処理した全体要求トークン
-    let lastSingleRequestToken = ""; // 学生側で前回処理した個別要求トークン
+      // --- Firebase の初期化
+      const firebaseConfig = await loadFirebaseConfig();
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+      const appId = typeof __app_id !== 'undefined' ? __app_id : 'tfabtile-clone';
+      
+      let currentUser = null;
+      let myRole = null; 
+      let currentRoomId = null;
+      let studentId = null; 
+      let localStream = null;
+      let lastAllRequestToken = ""; // 学生側で前回処理した全体要求トークン
+      let lastSingleRequestToken = ""; // 学生側で前回処理した個別要求トークン
 
     // 各種初期化時のセキュリティバッジ表示
     const updateAuthBadge = (user) => {
