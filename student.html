@@ -64,7 +64,7 @@
             <div class="space-y-4">
               <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1">ルームナンバー</label>
-                <input type="text" id="student-room-input" placeholder="例: 123456" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition">
+                <input type="text" id="student-room-input" placeholder="例: ABC123" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition" oninput="this.value = this.value.replace(/[^A-Za-z0-9]/g, '')">
               </div>
               <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1">氏名</label>
@@ -72,7 +72,7 @@
               </div>
               <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1">学籍番号（省略可）</label>
-                <input type="text" id="student-id-input" placeholder="例: 24A1001" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition">
+                <input type="text" id="student-id-input" placeholder="例: 24A1001" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition" oninput="this.value = this.value.replace(/[^ -~]/g, '')">
               </div>
               <div class="pt-2">
                 <button onclick="joinRoom()" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 rounded-xl transition text-sm flex items-center justify-center gap-2">
@@ -90,7 +90,10 @@
                 <div class="w-2.5 h-2.5 rounded-full bg-slate-400" id="sharing-status-dot"></div>
                 <div>
                   <h2 class="text-lg font-bold text-slate-900" id="active-student-display-name">---</h2>
-                  <p class="text-xs text-slate-500">ルーム <span id="active-room-display-id" class="font-bold text-sky-600 font-mono">------</span> に参加中</p>
+                  <p class="text-xs text-slate-500">
+                    <span id="active-student-number" class="hidden text-slate-400 font-mono mr-1"></span>
+                    ルーム <span id="active-room-display-id" class="font-bold text-sky-600 font-mono">------</span> に参加中
+                  </p>
                 </div>
               </div>
               <button onclick="leaveRoom()" class="text-xs font-semibold text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg transition">
@@ -205,8 +208,8 @@
           const roomInput = document.getElementById('student-room-input').value.trim();
 
           if (!nameInput) { showCustomAlert("あなたの氏名を入力してください。"); return; }
-          if (!roomInput || roomInput.length !== 6 || isNaN(roomInput)) {
-            showCustomAlert("正しい6桁のルームIDを入力してください。"); return;
+          if (!roomInput || !/^[A-Za-z0-9]{1,20}$/.test(roomInput)) {
+            showCustomAlert("ルームナンバーは半角英数字で入力してください。"); return;
           }
           if (!currentUser) {
             showCustomAlert("匿名ログインを準備中です。数秒後にもう一度確認して次へを押してください。"); return;
@@ -226,6 +229,13 @@
           activePanel.classList.remove('hidden');
           document.getElementById('active-student-display-name').innerText = nameInput;
           document.getElementById('active-room-display-id').innerText = currentRoomId;
+          const numberSpan = document.getElementById('active-student-number');
+          if (studentIdInput) {
+            numberSpan.innerText = studentIdInput;
+            numberSpan.classList.remove('hidden');
+          } else {
+            numberSpan.classList.add('hidden');
+          }
 
           const studentIdInput = document.getElementById('student-id-input').value.trim();
 
