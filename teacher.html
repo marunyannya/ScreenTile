@@ -60,11 +60,11 @@
             <div class="space-y-4">
               <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1">ルームナンバー</label>
-                <input type="text" id="teacher-room-input" placeholder="半角英数字、空欄の場合は自動生成" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition" oninput="this.value = this.value.replace(/[^A-Za-z0-9]/g, '')">
+                <input type="text" id="teacher-room-input" placeholder="半角英数字" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition" oninput="this.value = this.value.replace(/[^A-Za-z0-9]/g, '')">
                 <p class="text-[11px] text-slate-400 mt-1">※ 空欄の場合、自動的にルームナンバーが設定されます。</p>
               </div>
               <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">ルームパスワード <span class="text-xs bg-red-100 text-red-700 px-2.5 py-0.5 rounded-full font-semibold">必須</span></label>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">ルームパスワード <span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">必須</span></label>
                 <input type="password" id="teacher-password-input" placeholder="半角英数字記号" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition" oninput="this.value = this.value.replace(/[^\x20-\x7E]/g, '')">
               </div>
               <div>
@@ -73,14 +73,12 @@
               </div>
               <div class="pt-2">
                 <button onclick="submitRoomSettings()" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 rounded-xl transition text-sm flex items-center justify-center gap-2">
-                  <i data-lucide="monitor-play" class="w-5 h-5"></i>
-                  ルームに入室
+                  <i data-lucide="monitor-play" class="w-5 h-5"></i>ルームに入室
                 </button>
               </div>
               <div class="text-center pt-1">
                 <a href="howto.html" target="_blank" class="text-xs text-sky-500 hover:text-sky-700 hover:underline inline-flex items-center gap-1">
-                  <i data-lucide="circle-question-mark" class="w-3 h-3"></i> 
-                  使い方はこちらから
+                  <i data-lucide="circle-question-mark" class="w-3 h-3"></i>使い方はこちらから
                 </a>
               </div>
             </div>
@@ -102,13 +100,10 @@
             </div>
             <div class="flex flex-wrap gap-2 w-full md:w-auto">
               <button id="request-all-btn" onclick="requestCaptureAll()" class="flex-1 md:flex-initial bg-sky-600 hover:bg-sky-700 text-white font-bold py-2.5 px-5 rounded-xl transition text-sm flex items-center justify-center gap-2 shadow-sm">
-                <i data-lucide="camera" ></i>
-                <i class="w-4 h-4 fa-solid fa-camera"></i>
-                全員の画面を取得
+                <i data-lucide="camera" class="w-4 h-4"></i>最新の画面を取得
               </button>
               <button onclick="openTeacherLeaveModal()" class="flex-1 md:flex-initial bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2.5 px-4 rounded-xl transition text-sm flex items-center justify-center gap-2">
-                <i class="w-4 h-4 fa-solid fa-arrow-right-to-bracket"></i>
-                ルームを退室
+                <i data-lucide="log-out" class="w-4 h-4"></i>ルームを退室
               </button>
             </div>
           </div>
@@ -129,11 +124,10 @@
             </div>
           </div>
         </div>
-
       </div>
     </main>
 
-    <!-- 拡大画像表示モーダル -->
+    <!-- 拡大表示モーダル -->
     <div id="zoom-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden opacity-0 transition-opacity duration-200" onclick="closeZoomModal()">
       <div class="bg-white rounded-2xl max-w-4xl w-full overflow-hidden shadow-2xl flex flex-col" onclick="event.stopPropagation()">
         <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
@@ -202,6 +196,7 @@
       </div>
     </div>
 
+    <!-- フッター -->
     <footer class="bg-white border-t border-slate-100 py-6 mt-12 text-center text-xs text-slate-400">
       <div class="max-w-7xl mx-auto px-4"><p>&copy; 2026 Rina Hayashi</p></div>
     </footer>
