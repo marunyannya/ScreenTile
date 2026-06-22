@@ -178,7 +178,7 @@
         const result = await signInAnonymously(auth);
         currentUser = result.user;
         document.getElementById('loading').classList.add('hidden');
-        document.getElementById('teacher-settings-view').classList.remove('hidden');
+        document.getElementById('student-view').classList.remove('hidden');
         lucide.createIcons();
       } catch (err) {
         showConfigError('認証に失敗しました。ページを再読み込みしてください。');
