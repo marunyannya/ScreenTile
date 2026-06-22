@@ -59,12 +59,12 @@
             <div class="space-y-4">
               <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1">ルームナンバー</label>
-                <input type="text" id="teacher-room-input" placeholder="空欄の場合は自動生成" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                <input type="text" id="teacher-room-input" placeholder="空欄の場合は自動生成" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" oninput="this.value = this.value.replace(/[^A-Za-z0-9]/g, '')">
                 <p class="text-[11px] text-slate-400 mt-1">※ 以前使用したルームナンバーを入力すると、同じルームに入室することもできます。</p>
               </div>
               <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1">ルームパスワード <span class="text-red-500">*</span></label>
-                <input type="password" id="teacher-password-input" placeholder="教員間で共有するパスワード" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                <input type="password" id="teacher-password-input" placeholder="教員間で共有するパスワード" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" oninput="this.value = this.value.replace(/[^\x20-\x7E]/g, '')">
                 <p class="text-[11px] text-slate-400 mt-1">※ 既存ルームに入室する場合は、そのルームに設定されたパスワードを入力してください。</p>
               </div>
               <div>
@@ -76,6 +76,12 @@
                   <i class="w-4 h-4 fa-solid fa-arrow-right-to-bracket"></i>
                   ルームに入室
                 </button>
+              </div>
+              <div class="text-center pt-1">
+                <a href="howto.html" target="_blank" class="text-xs text-indigo-500 hover:text-indigo-700 hover:underline inline-flex items-center gap-1">
+                  <i class="fa-solid fa-circle-question"></i>
+                  使い方はこちらから
+                </a>
               </div>
             </div>
           </div>
@@ -275,8 +281,8 @@
             showCustomAlert("ルームパスワードを入力してください。");
             return;
           }
-          if (roomInput !== "" && (roomInput.length !== 6 || isNaN(roomInput))) {
-            showCustomAlert("ルームナンバーは6桁の半角数字、または空欄にしてください。");
+          if (roomInput !== "" && !/^[A-Za-z0-9]{1,20}$/.test(roomInput)) {
+            showCustomAlert("ルームナンバーは半角英数字で入力してください。");
             return;
           }
           if (roomInput === "") {
