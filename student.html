@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ScreenTile - 学生</title>
+    <title>ScreenTile（学生）</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://kit.fontawesome.com/58ea377035.js" crossorigin="anonymous"></script>
@@ -16,68 +16,61 @@
       }
     </style>
   </head>
+  
   <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
-
     <!-- ヘッダー -->
     <header class="bg-white border-b border-slate-200 px-6 py-4 sticky top-0 z-40 shadow-sm">
       <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
         <div class="flex items-center gap-3">
-          <div class="p-2 bg-sky-600 text-white rounded-lg">
-            <i class="w-6 h-6 fa-solid fa-display"></i>
+          <div class="p-2 bg-teal-600 text-white rounded-lg">
+            <i data-lucide="layout-grid" class="w-6 h-6"></i>
           </div>
           <div>
             <h1 class="text-xl font-bold tracking-tight text-slate-900">ScreenTile</h1>
-            <p class="text-xs text-slate-500">学生ページ</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-3">
-          <div id="auth-badge" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
-            <span class="w-2 h-2 rounded-full bg-slate-400"></span>
-            システム初期化中...
+            <p class="text-xs text-slate-500">操作画面共有アプリ（学生用）</p>
           </div>
         </div>
       </div>
     </header>
 
+    <!-- ボディ -->
     <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6">
       <div id="app" class="fade-in">
 
-        <!-- ローディング -->
+        <!-- ローディング画面 -->
         <div id="loading" class="flex flex-col items-center justify-center py-20">
-          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600 mb-4"></div>
-          <p class="text-slate-600" id="loading-text">セキュリティ環境を準備しています...</p>
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mb-4"></div>
+          <p class="text-slate-600" id="loading-text">ローディング中...</p>
         </div>
 
-        <!-- 学生：ルーム画面 -->
+        <!-- ルーム入出画面 -->
         <div id="student-view" class="hidden max-w-xl mx-auto">
-          <!-- 入室フォーム -->
           <div id="student-join-panel" class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-6">
             <div class="flex items-center gap-3 mb-6">
-              <div class="p-2.5 bg-sky-50 text-sky-600 rounded-xl">
+              <div class="p-2.5 bg-teal-50 text-teal-600 rounded-xl">
                 <i class="w-6 h-6 fa-solid fa-pen-to-square"></i>
               </div>
               <div>
-                <h2 class="text-xl font-bold text-slate-900">ルーム情報</h2>
-                <p class="text-xs text-slate-500">ルームの情報を入力してください</p>
+                <h2 class="text-xl font-bold text-slate-900">ルーム入室情報</h2>
+                <p class="text-xs text-slate-500">ルームナンバーと自分の情報を入力してください</p>
               </div>
             </div>
             <div class="space-y-4">
               <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">ルームナンバー</label>
-                <input type="text" id="student-room-input" placeholder="例: ABC123" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition" oninput="this.value = this.value.replace(/[^A-Za-z0-9]/g, '')">
+                <label class="block text-sm font-semibold text-slate-700 mb-1">ルームナンバー <span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">必須</span></label>
+                <input type="text" id="student-room-input" placeholder="例: ABC123" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition" oninput="this.value = this.value.replace(/[^A-Za-z0-9]/g, '')">
               </div>
               <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">氏名</label>
-                <input type="text" id="student-name-input" placeholder="例: 山田 太郎" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition">
+                <label class="block text-sm font-semibold text-slate-700 mb-1">氏名 <span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">必須</span></label>
+                <input type="text" id="student-name-input" placeholder="例: 山田 太郎" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition">
               </div>
               <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">学籍番号（省略可）</label>
-                <input type="text" id="student-id-input" placeholder="例: 24A1001" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition" oninput="this.value = this.value.replace(/[^ -~]/g, '')">
+                <label class="block text-sm font-semibold text-slate-700 mb-1">学籍番号</label>
+                <input type="text" id="student-id-input" placeholder="例: 24A1001" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition" oninput="this.value = this.value.replace(/[^ -~]/g, '')">
               </div>
               <div class="pt-2">
-                <button onclick="joinRoom()" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 rounded-xl transition text-sm flex items-center justify-center gap-2">
-                  <i class="w-4 h-4 fa-solid fa-arrow-right-to-bracket"></i>
-                  ルームに入室
+                <button onclick="joinRoom()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 rounded-xl transition text-sm flex items-center justify-center gap-2">
+                  <i data-lucide="monitor-play" class="w-5 h-5"></i>ルームに入室
                 </button>
               </div>
             </div>
@@ -92,7 +85,7 @@
                   <h2 class="text-lg font-bold text-slate-900" id="active-student-display-name">---</h2>
                   <p class="text-xs text-slate-500">
                     <span id="active-student-number" class="hidden text-slate-400 font-mono mr-1"></span>
-                    ルーム <span id="active-room-display-id" class="font-bold text-sky-600 font-mono">------</span> に参加中
+                    ルーム <span id="active-room-display-id" class="font-bold text-teal-600 font-mono">------</span> に参加中
                   </p>
                 </div>
               </div>
@@ -117,7 +110,7 @@
                   <span id="indicator-text">画面キャプチャを送信しました！</span>
                 </div>
               </div>
-              <button id="start-share-btn" onclick="startScreenShare()" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2">
+              <button id="start-share-btn" onclick="startScreenShare()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2">
                 <i data-lucide="screen-share" class="w-5 h-5"></i>
                 画面共有を開始する
               </button>
@@ -178,23 +171,10 @@
       let lastSingleRequestToken = "";
       let unsubscribeRoom = null;
 
-      // 認証バッジ
-      const updateAuthBadge = (user) => {
-        const badge = document.getElementById('auth-badge');
-        if (!user) {
-          badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-400"></span> 未ログイン`;
-          badge.className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200";
-        } else {
-          badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-sky-500"></span> 学生`;
-          badge.className = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-sky-50 text-sky-700 border border-sky-200";
-        }
-      };
-
       // 起動時に匿名認証して即入室フォームへ
       try {
         const result = await signInAnonymously(auth);
         currentUser = result.user;
-        updateAuthBadge(currentUser);
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('student-view').classList.remove('hidden');
         lucide.createIcons();
@@ -227,6 +207,8 @@
           document.getElementById('student-join-panel').classList.add('hidden');
           const activePanel = document.getElementById('student-active-panel');
           activePanel.classList.remove('hidden');
+          const studentIdInput = document.getElementById('student-id-input').value.trim();
+
           document.getElementById('active-student-display-name').innerText = nameInput;
           document.getElementById('active-room-display-id').innerText = currentRoomId;
           const numberSpan = document.getElementById('active-student-number');
@@ -236,8 +218,6 @@
           } else {
             numberSpan.classList.add('hidden');
           }
-
-          const studentIdInput = document.getElementById('student-id-input').value.trim();
 
           const myDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
           await setDoc(myDocRef, {
@@ -317,7 +297,7 @@
         document.getElementById('video-placeholder').classList.remove('hidden');
         const startBtn = document.getElementById('start-share-btn');
         startBtn.innerHTML = `<i data-lucide="screen-share" class="w-5 h-5"></i> 画面共有を開始する`;
-        startBtn.className = "w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2";
+        startBtn.className = "w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2";
         startBtn.onclick = startScreenShare;
         document.getElementById('sending-indicator').classList.add('opacity-0');
         document.getElementById('sharing-status-dot').className = "w-2.5 h-2.5 rounded-full bg-slate-400";
@@ -423,12 +403,12 @@
         alertDiv.innerHTML = `
           <div class="flex-grow">
             <div class="flex items-center gap-2 mb-1">
-              <i data-lucide="alert-circle" class="w-5 h-5 text-sky-400"></i>
-              <span class="font-bold text-sm text-sky-400">システム通知</span>
+              <i data-lucide="alert-circle" class="w-5 h-5 text-teal-400"></i>
+              <span class="font-bold text-sm text-teal-400">システム通知</span>
             </div>
             <p class="text-xs font-medium whitespace-pre-wrap leading-relaxed">${escapeHTML(message)}</p>
           </div>
-          <button onclick="this.parentElement.remove()" class="ml-4 text-xs font-bold text-sky-400 hover:text-sky-300 self-start mt-1">閉じる</button>`;
+          <button onclick="this.parentElement.remove()" class="ml-4 text-xs font-bold text-teal-400 hover:text-teal-300 self-start mt-1">閉じる</button>`;
         document.body.appendChild(alertDiv);
         lucide.createIcons();
         setTimeout(() => { if (alertDiv) alertDiv.remove(); }, 12000);
