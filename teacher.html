@@ -47,7 +47,7 @@
                 <i data-lucide="plus-circle" class="w-6 h-6"></i>
               </div>
               <div>
-                <h2 class="text-xl font-bold text-slate-900">ルームの作成</h2>
+                <h2 class="text-xl font-bold text-slate-900">ルーム作成</h2>
                 <p class="text-xs text-slate-500">ルームの情報（ナンバー、パスワード、講義名）を入力してください。</p>
               </div>
             </div>
@@ -145,7 +145,7 @@
           <img id="modal-image" class="w-full h-full object-contain hidden" src="" alt="拡大プレビュー">
           <div id="modal-image-loading" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
             <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-white mb-3"></div>
-            <p class="text-xs text-white font-medium">学生からの高画質アップロードをオンデマンド待機中...</p>
+            <p class="text-xs text-white font-medium">待機中...</p>
           </div>
           <div id="modal-loading-overlay" class="absolute inset-0 bg-slate-900/60 flex flex-col items-center justify-center text-white hidden">
             <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-2"></div>
@@ -243,7 +243,7 @@
         showConfigError('認証に失敗しました。ページを再読み込みしてください。');
       }
 
-      // ルーム設定決定
+      //--- 入力情報を確認してルームを作成
       window.submitRoomSettings = async function() {
         try {
           const lectureInput = document.getElementById('teacher-lecture-input').value.trim();
@@ -254,7 +254,7 @@
             showCustomAlert("ルームパスワードを入力してください。");
             return;
           }
-          if (roomInput !== "" && !/[^\x20-\x7E]{1,20}$/.test(roomInput)) {
+          if (roomInput !== "" && !/^[\x20-\x7E]{1,20}$/.test(roomInput)) {
             showCustomAlert("ルームナンバーは半角英数字記号で入力してください。");
             return;
           }
@@ -263,7 +263,7 @@
           }
 
           document.getElementById('teacher-settings-view').classList.add('hidden');
-          document.getElementById('loading-text').innerText = "ルームの準備中...";
+          document.getElementById('loading-text').innerText = "ルーム準備中...";
           document.getElementById('loading').classList.remove('hidden');
 
           // 既存ルームの場合はパスワードを照合
@@ -283,7 +283,7 @@
 
           currentRoomId = roomInput;
           document.getElementById('teacher-room-id').innerText = currentRoomId;
-          document.getElementById('display-lecture-name').innerText = lectureInput !== "" ? lectureInput : "講義画面監視";
+          document.getElementById('display-lecture-name').innerText = lectureInput !== "" ? lectureInput : "講義名未設定";
 
           await setDoc(roomRef, {
             createdAt: isExisting ? roomSnap.data().createdAt : new Date().toISOString(),
@@ -367,7 +367,7 @@
             requestTriggerAll: "REQ-" + Date.now(),
             requestTimeAll: new Date().toISOString()
           });
-          showCustomAlert("全員に画面更新リクエストを送信しました！");
+          showCustomAlert("更新リクエストを送信しました！");
         } catch (err) {
           showCustomAlert("リクエスト送信に失敗しました。原因: " + err.message);
         } finally {
