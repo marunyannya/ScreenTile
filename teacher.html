@@ -134,8 +134,7 @@
           </div>
           <div class="flex items-center gap-2">
             <button id="modal-refresh-btn" class="bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold py-1.5 px-3 rounded-lg text-xs transition flex items-center gap-1">
-              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-              この学生の画面のみ取得
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>最新の画面を取得
             </button>
             <button onclick="closeZoomModal()" class="p-1.5 hover:bg-slate-200 rounded-lg transition text-slate-400 hover:text-slate-600">
               <i data-lucide="x" class="w-5 h-5"></i>
@@ -196,6 +195,7 @@
     </footer>
 
     <script type="module">
+      //--- Firebase の設定
       import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
       import { getAuth, signInAnonymously, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
       import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -236,11 +236,10 @@
       let currentUser = null;
       let currentRoomId = null;
 
-      // 起動時に匿名認証して即ルーム作成画面へ
+      //--- 匿名認証してルーム作成画面へ移行
       try {
         const result = await signInAnonymously(auth);
         currentUser = result.user;
-        updateAuthBadge(currentUser);
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('teacher-settings-view').classList.remove('hidden');
         lucide.createIcons();
@@ -268,7 +267,7 @@
           }
 
           document.getElementById('teacher-settings-view').classList.add('hidden');
-          document.getElementById('loading-text').innerText = "ルームの準備または既存ルームの引き継ぎを行っています...";
+          document.getElementById('loading-text').innerText = "ルームの準備中...";
           document.getElementById('loading').classList.remove('hidden');
 
           // 既存ルームの場合はパスワードを照合
