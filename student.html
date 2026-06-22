@@ -43,7 +43,7 @@
           <p class="text-slate-600" id="loading-text">ローディング中...</p>
         </div>
 
-        <!-- ルーム入出画面 -->
+        <!-- ルーム入室画面 -->
         <div id="student-view" class="hidden max-w-xl mx-auto">
           <div id="student-join-panel" class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-6">
             <div class="flex items-center gap-3 mb-6">
@@ -58,7 +58,7 @@
             <div class="space-y-4">
               <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1">ルームナンバー <span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">必須</span></label>
-                <input type="text" id="student-room-input" placeholder="例: ABC123" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition" oninput="this.value = this.value.replace(/[^A-Za-z0-9]/g, '')">
+                <input type="text" id="student-room-input" placeholder="例: ABC123" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition" oninput="this.value = this.value.replace(/[^\x20-\x7E]/g, '')">
               </div>
               <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-1">氏名 <span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">必須</span></label>
@@ -121,11 +121,13 @@
       </div>
     </main>
 
+    <!-- フッター -->
     <footer class="bg-white border-t border-slate-100 py-6 mt-12 text-center text-xs text-slate-400">
       <div class="max-w-7xl mx-auto px-4"><p>&copy; 2026 Rina Hayashi</p></div>
     </footer>
 
     <script type="module">
+      //--- Firebase の設定
       import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
       import { getAuth, signInAnonymously, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
       import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -142,7 +144,7 @@
         const params = new URLSearchParams(window.location.search);
         const configUrl = params.get('config');
         if (!configUrl) {
-          showConfigError('URLに <code>?config=https://...</code> の形式で Firebase 設定ファイルのURLを指定してください。');
+          showConfigError('Firebase 設定ファイルのURLを指定してください。');
           throw new Error("No config URL specified.");
         }
         try {
@@ -152,7 +154,7 @@
           if (!cfg.apiKey) throw new Error('apiKey が見つかりません');
           return cfg;
         } catch (err) {
-          showConfigError(`設定ファイルの読み込みに失敗しました。<br>URL: ${configUrl}<br>原因: ${err.message}`);
+          showConfigError(`Firebase 設定ファイルの読み込みに失敗しました。<br>URL: ${configUrl}<br>原因: ${err.message}`);
           throw err;
         }
       }
@@ -171,12 +173,12 @@
       let lastSingleRequestToken = "";
       let unsubscribeRoom = null;
 
-      // 起動時に匿名認証して即入室フォームへ
+      //--- 匿名認証してルーム入室画面へ移行
       try {
         const result = await signInAnonymously(auth);
         currentUser = result.user;
         document.getElementById('loading').classList.add('hidden');
-        document.getElementById('student-view').classList.remove('hidden');
+        document.getElementById('teacher-settings-view').classList.remove('hidden');
         lucide.createIcons();
       } catch (err) {
         showConfigError('認証に失敗しました。ページを再読み込みしてください。');
@@ -187,12 +189,14 @@
           const nameInput = document.getElementById('student-name-input').value.trim();
           const roomInput = document.getElementById('student-room-input').value.trim();
 
-          if (!nameInput) { showCustomAlert("あなたの氏名を入力してください。"); return; }
-          if (!roomInput || !/^[A-Za-z0-9]{1,20}$/.test(roomInput)) {
-            showCustomAlert("ルームナンバーは半角英数字で入力してください。"); return;
+          if (!nameInput) { showCustomAlert("氏名を入力してください。"); return; }
+          if (!roomInput || !/^[\x20-\x7E]{1,20}$/.test(roomInput)) {
+            showCustomAlert("ルームナンバーは半角英数字記号で入力してください。");
+            return;
           }
           if (!currentUser) {
-            showCustomAlert("匿名ログインを準備中です。数秒後にもう一度確認して次へを押してください。"); return;
+            showCustomAlert("匿名ログインを準備中です。数秒後にもう一度確認して次へを押してください。");
+            return;
           }
 
           currentRoomId = roomInput;
