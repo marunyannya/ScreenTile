@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="img/favicon.ico">
+    <title>ScreenTile（学生）</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://kit.fontawesome.com/58ea377035.js" crossorigin="anonymous"></script>
+    <style>
+      .fade-in { animation: fadeIn 0.3s ease-out; }
+      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+      .hidden-video-container {
+        position: absolute; top: 0; left: 0; width: 1px; height: 1px;
+        overflow: hidden; opacity: 0.001; pointer-events: none; z-index: -100;
+      }
+    </style>
+  </head>
+  
+  <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
+    <!-- ヘッダー -->
+    <header class="bg-white border-b border-slate-200 px-6 py-4 sticky top-0 z-40 shadow-sm">
+      <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-teal-600 text-white rounded-lg">
+            <i data-lucide="layout-grid" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold tracking-tight text-slate-900">ScreenTile</h1>
+            <p class="text-xs text-slate-500">操作画面共有アプリ（学生用）</p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ボディ -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6">
+      <div id="app" class="fade-in">
+
+        <!-- ローディング画面 -->
+        <div id="loading" class="flex flex-col items-center justify-center py-20">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mb-4"></div>
+          <p class="text-slate-600" id="loading-text">ローディング中...</p>
+        </div>
+
+        <!-- ルーム入室画面 -->
+        <div id="student-view" class="hidden max-w-xl mx-auto">
+          <div id="student-join-panel" class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-6">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="p-2.5 bg-teal-50 text-teal-600 rounded-xl">
+                <i class="w-6 h-6 fa-solid fa-pen-to-square"></i>
+              </div>
+              <div>
+                <h2 class="text-xl font-bold text-slate-900">ルーム入室情報</h2>
+                <p class="text-xs text-slate-500">ルームナンバーと自分の情報を入力してください</p>
+              </div>
+            </div>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">ルームナンバー <span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">必須</span></label>
+                <input type="text" id="student-room-input" placeholder="例: ABC123" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition" oninput="this.value = this.value.replace(/[^\x20-\x7E]/g, '')">
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">氏名 <span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">必須</span></label>
+                <input type="text" id="student-name-input" placeholder="例: 山田 太郎" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition">
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">学籍番号</label>
+                <input type="text" id="student-id-input" placeholder="例: 24A1001" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition" oninput="this.value = this.value.replace(/[^ -~]/g, '')">
+              </div>
+              <div class="pt-2">
+                <button onclick="joinRoom()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 rounded-xl transition text-sm flex items-center justify-center gap-2">
+                  <i data-lucide="monitor-play" class="w-5 h-5"></i>ルームに入室
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 共有画面 -->
+          <div id="student-active-panel" class="hidden bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
+              <div class="flex items-center gap-3">
+                <div class="w-2.5 h-2.5 rounded-full bg-slate-400" id="sharing-status-dot"></div>
+                <div>
+                  <h2 class="text-lg font-bold text-slate-900" id="active-student-display-name">---</h2>
+                  <p class="text-xs text-slate-500">
+                    <span id="active-student-number" class="hidden text-slate-400 font-mono mr-1"></span>
+                    ルーム <span id="active-room-display-id" class="font-bold text-teal-600 font-mono">------</span> に参加中
+                  </p>
+                </div>
+              </div>
+              <button onclick="leaveRoom()" class="text-xs font-semibold text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg transition">
+                ルームを退出
+              </button>
+            </div>
+            <div class="space-y-6">
+              <div class="relative bg-slate-900 rounded-xl overflow-hidden aspect-video flex items-center justify-center">
+                <div class="hidden-video-container">
+                  <video id="capture-video" autoplay playsinline muted></video>
+                </div>
+                <canvas id="thumbnail-canvas" class="hidden"></canvas>
+                <canvas id="full-canvas" class="hidden"></canvas>
+                <img id="local-preview-img" class="w-full h-full object-contain hidden" alt="画面プレビュー">
+                <div id="video-placeholder" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-slate-400">
+                  <i data-lucide="monitor-off" class="w-12 h-12 mb-3 text-slate-600"></i>
+                  <p class="font-medium text-slate-200">画面が共有されていません</p>
+                </div>
+                <div id="sending-indicator" class="absolute top-3 right-3 bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-full flex items-center gap-1.5 opacity-0 transition-opacity duration-300">
+                  <span class="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
+                  <span id="indicator-text">画面キャプチャを送信しました！</span>
+                </div>
+              </div>
+              <button id="start-share-btn" onclick="startScreenShare()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2">
+                <i data-lucide="screen-share" class="w-5 h-5"></i>
+                画面共有を開始
+              </button>
+            </div>
+
+            <!-- スタンプ・コメント送信パネル -->
+            <div class="border-t border-slate-100 pt-5 mt-5">
+              <h3 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                <i data-lucide="message-circle" class="w-4 h-4 text-teal-500"></i>
+                教員へ送信
+              </h3>
+              <div class="mb-4">
+                <p class="text-xs text-slate-500 font-semibold mb-2">スタンプ</p>
+                <div class="flex flex-wrap gap-2" id="stamp-buttons"></div>
+              </div>
+              <div>
+                <p class="text-xs text-slate-500 font-semibold mb-2">コメント</p>
+                <div class="flex gap-2">
+                  <input type="text" id="comment-input" placeholder="質問や意見を入力" maxlength="200"
+                    class="flex-grow px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition">
+                  <button onclick="sendComment()" class="bg-teal-600 hover:bg-teal-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition flex items-center gap-1.5 shrink-0">
+                    <i data-lucide="send" class="w-4 h-4"></i>送信
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- フッター -->
+    <footer class="bg-white border-t border-slate-100 py-6 mt-12 text-center text-xs text-slate-400">
+      <div class="max-w-7xl mx-auto px-4"><p>&copy; 2026 Rina Hayashi</p></div>
+    </footer>
+
+    <script type="module">
+      //--- Firebase の設定
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+      import { getAuth, signInAnonymously, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+      import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+      function showConfigError(message) {
+        document.getElementById('loading').innerHTML = `
+          <div class="p-4 max-w-md bg-red-50 border border-red-200 text-red-800 rounded-xl">
+            <h3 class="font-bold text-base mb-1">Firebase 設定エラー</h3>
+            <p class="text-xs leading-relaxed">${message}</p>
+          </div>`;
+      }
+
+      async function loadFirebaseConfig() {
+        const params = new URLSearchParams(window.location.search);
+        const configUrl = params.get('config');
+        if (!configUrl) {
+          showConfigError('Firebase 設定ファイルのURLを指定してください。');
+          throw new Error("No config URL specified.");
+        }
+        try {
+          const res = await fetch(configUrl);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const cfg = await res.json();
+          if (!cfg.apiKey) throw new Error('apiKey が見つかりません');
+          return cfg;
+        } catch (err) {
+          showConfigError(`Firebase 設定ファイルの読み込みに失敗しました。<br>URL: ${configUrl}<br>原因: ${err.message}`);
+          throw err;
+        }
+      }
+
+      const firebaseConfig = await loadFirebaseConfig();
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+      const appId = typeof __app_id !== 'undefined' ? __app_id : 'tfabtile-clone';
+
+      let currentUser = null;
+      let currentRoomId = null;
+      let studentId = null;
+      let localStream = null;
+      let lastAllRequestToken = "";
+      let lastSingleRequestToken = "";
+      let unsubscribeRoom = null;
+
+      //--- 匿名認証してルーム入室画面へ移行
+      try {
+        const result = await signInAnonymously(auth);
+        currentUser = result.user;
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('student-view').classList.remove('hidden');
+        lucide.createIcons();
+      } catch (err) {
+        showConfigError('認証に失敗しました。ページを再読み込みしてください。');
+      }
+
+      window.joinRoom = async function() {
+        try {
+          const nameInput = document.getElementById('student-name-input').value.trim();
+          const roomInput = document.getElementById('student-room-input').value.trim();
+
+          if (!nameInput) { showCustomAlert("氏名を入力してください。"); return; }
+          if (!roomInput || !/^[\x20-\x7E]{1,20}$/.test(roomInput)) {
+            showCustomAlert("ルームナンバーは半角英数字記号で入力してください。");
+            return;
+          }
+          if (!currentUser) {
+            showCustomAlert("匿名ログインを準備中です。数秒後にもう一度確認して次へを押してください。");
+            return;
+          }
+
+          currentRoomId = roomInput;
+          studentId = currentUser.uid;
+
+          const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
+          const roomDoc = await getDoc(roomRef);
+          if (!roomDoc.exists()) {
+            showCustomAlert("指定されたルームIDが存在しないか、すでに終了しています。"); return;
+          }
+
+          document.getElementById('student-join-panel').classList.add('hidden');
+          const activePanel = document.getElementById('student-active-panel');
+          activePanel.classList.remove('hidden');
+          const studentIdInput = document.getElementById('student-id-input').value.trim();
+
+          document.getElementById('active-student-display-name').innerText = nameInput;
+          document.getElementById('active-room-display-id').innerText = currentRoomId;
+          const numberSpan = document.getElementById('active-student-number');
+          if (studentIdInput) {
+            numberSpan.innerText = studentIdInput;
+            numberSpan.classList.remove('hidden');
+          } else {
+            numberSpan.classList.add('hidden');
+          }
+
+          const myDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
+          await setDoc(myDocRef, {
+            roomId: currentRoomId,
+            hostId: roomDoc.data().hostId || "",
+            name: nameInput,
+            studentNumber: studentIdInput,
+            joinedAt: new Date().toISOString(),
+            leftAt: null,
+            updatedAt: new Date().toISOString(),
+            thumbnailImage: "",
+            fullImage: ""
+          }, { merge: true });
+
+          document.getElementById('sharing-status-dot').className = "w-2.5 h-2.5 rounded-full bg-slate-400";
+          listenForTeacherRequests();
+          initStampButtons();
+          lucide.createIcons();
+        } catch (error) {
+          showCustomAlert("通信エラーにより参加できませんでした。(" + error.message + ")");
+        }
+      };
+
+      function listenForTeacherRequests() {
+        if (!currentUser || !currentRoomId || !studentId) return;
+        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
+        unsubscribeRoom = onSnapshot(roomRef, (docSnap) => {
+          if (!docSnap.exists()) return;
+          const data = docSnap.data();
+          if (data.requestTriggerAll && data.requestTriggerAll !== lastAllRequestToken) {
+            lastAllRequestToken = data.requestTriggerAll;
+            captureAndSendImmediately(false, "共有画面を更新しました！");
+          }
+          if (data.requestTarget === studentId && data.requestTriggerSingle && data.requestTriggerSingle !== lastSingleRequestToken) {
+            lastSingleRequestToken = data.requestTriggerSingle;
+            captureAndSendImmediately(true, "共有画面(拡大)を更新しました！");
+          }
+          if (data.requestTarget !== studentId && lastSingleRequestToken !== "") {
+            lastSingleRequestToken = "";
+            clearFullImageOnDb();
+          }
+        }, (err) => { console.error("Request listen error:", err); });
+      }
+
+      async function clearFullImageOnDb() {
+        if (!currentUser || !studentId) return;
+        try {
+          const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
+          await updateDoc(studentDocRef, { fullImage: "" });
+        } catch (e) { console.error("FullImageクリア失敗:", e); }
+      }
+
+      window.startScreenShare = async function() {
+        const video = document.getElementById('capture-video');
+        const startBtn = document.getElementById('start-share-btn');
+        try {
+          localStream = await navigator.mediaDevices.getDisplayMedia({
+            video: { width: { ideal: 960 }, height: { ideal: 540 }, frameRate: { ideal: 1 } },
+            audio: false
+          });
+          video.srcObject = localStream;
+          document.getElementById('video-placeholder').classList.add('hidden');
+          startBtn.innerHTML = `<i data-lucide="stop-circle" class="w-5 h-5"></i> 画面共有を停止`;
+          startBtn.className = "w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2";
+          startBtn.onclick = stopScreenShare;
+          document.getElementById('sharing-status-dot').className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse animate-duration-1000";
+          setTimeout(() => { captureAndSendImmediately(false, "画面共有を開始しました"); }, 1000);
+          localStream.getVideoTracks()[0].onended = () => { stopScreenShare(); };
+        } catch (error) {
+          showCustomAlert("画面共有を開始できませんでした。ブラウザの共有許可ダイアログで『共有』を選択してください。");
+        }
+        lucide.createIcons();
+      };
+
+      function resetScreenShareUI() {
+        if (localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
+        const video = document.getElementById('capture-video');
+        video.srcObject = null;
+        document.getElementById('local-preview-img').classList.add('hidden');
+        document.getElementById('video-placeholder').classList.remove('hidden');
+        const startBtn = document.getElementById('start-share-btn');
+        startBtn.innerHTML = `<i data-lucide="screen-share" class="w-5 h-5"></i> 画面共有を開始する`;
+        startBtn.className = "w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2";
+        startBtn.onclick = startScreenShare;
+        document.getElementById('sending-indicator').classList.add('opacity-0');
+        document.getElementById('sharing-status-dot').className = "w-2.5 h-2.5 rounded-full bg-slate-400";
+      }
+
+      window.stopScreenShare = async function() {
+        resetScreenShareUI();
+        if (currentUser && currentRoomId && studentId) {
+          try {
+            const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
+            await updateDoc(studentDocRef, { thumbnailImage: "", fullImage: "", updatedAt: new Date().toISOString() });
+          } catch (err) { console.error("切断時リセットエラー:", err); }
+        }
+        lucide.createIcons();
+      };
+
+      async function captureAndSendImmediately(isFullImageRequested = false, statusMessage = "送信しました！") {
+        const video = document.getElementById('capture-video');
+        const thumbCanvas = document.getElementById('thumbnail-canvas');
+        const fullCanvas = document.getElementById('full-canvas');
+        const previewImg = document.getElementById('local-preview-img');
+        const indicator = document.getElementById('sending-indicator');
+        const indicatorText = document.getElementById('indicator-text');
+        if (!localStream) return;
+
+        const thumbCtx = thumbCanvas.getContext('2d');
+        const fullCtx = fullCanvas.getContext('2d');
+        const thumbWidth = 240;
+        let thumbHeight = 135;
+        if (video.videoWidth && video.videoHeight) thumbHeight = (video.videoHeight / video.videoWidth) * thumbWidth;
+        thumbCanvas.width = thumbWidth; thumbCanvas.height = thumbHeight;
+        const fullWidth = 960;
+        let fullHeight = 540;
+        if (video.videoWidth && video.videoHeight) fullHeight = (video.videoHeight / video.videoWidth) * fullWidth;
+        fullCanvas.width = fullWidth; fullCanvas.height = fullHeight;
+
+        try {
+          if (video.readyState >= 2) {
+            thumbCtx.drawImage(video, 0, 0, thumbWidth, thumbHeight);
+            const base64Thumbnail = thumbCanvas.toDataURL('image/jpeg', 0.30);
+            let base64FullImage = "";
+            if (isFullImageRequested) {
+              fullCtx.drawImage(video, 0, 0, fullWidth, fullHeight);
+              base64FullImage = fullCanvas.toDataURL('image/jpeg', 0.60);
+              previewImg.src = base64FullImage;
+            } else {
+              previewImg.src = base64Thumbnail;
+            }
+            previewImg.classList.remove('hidden');
+            if (indicatorText) indicatorText.innerText = statusMessage;
+            if (indicator._fadeTimer) clearTimeout(indicator._fadeTimer);
+            indicator.classList.remove('opacity-0');
+            indicator._fadeTimer = setTimeout(() => { indicator.classList.add('opacity-0'); indicator._fadeTimer = null; }, 2500);
+
+            const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
+            const updateData = { thumbnailImage: base64Thumbnail, updatedAt: new Date().toISOString() };
+            if (isFullImageRequested) updateData.fullImage = base64FullImage;
+            await updateDoc(studentDocRef, updateData);
+          }
+        } catch (err) { console.error("キャプチャ制御送信エラー:", err); }
+      }
+
+      //--- スタンプ・コメント機能
+      const STAMPS = [
+        { emoji: '👍', label: 'いいね' },
+        { emoji: '✋', label: 'はい' },
+        { emoji: '❓', label: '質問' },
+        { emoji: '⏳', label: 'ちょっと待って' },
+        { emoji: '😊', label: 'わかった' },
+        { emoji: '😕', label: 'わからない' },
+        { emoji: '🎉', label: 'すごい' },
+        { emoji: '👀', label: 'もう一度' },
+        { emoji: '💡', label: 'なるほど' },
+        { emoji: '🆗', label: 'OK' },
+        { emoji: '🆖', label: 'NG'},
+      ];
+
+      function initStampButtons() {
+        const container = document.getElementById('stamp-buttons');
+        if (!container) return;
+        container.innerHTML = '';
+        STAMPS.forEach(stamp => {
+          const btn = document.createElement('button');
+          btn.className = 'w-12 h-12 flex items-center justify-center bg-slate-50 hover:bg-teal-50 border border-slate-200 hover:border-teal-300 rounded-xl text-2xl transition active:scale-90 shrink-0';
+          btn.title = stamp.label;
+          btn.textContent = stamp.emoji;
+          btn.onclick = () => sendStamp(stamp.emoji, btn);
+          container.appendChild(btn);
+        });
+      }
+
+      async function sendStamp(emoji, btn) {
+        if (!currentRoomId || !studentId) {
+          showCustomAlert('ルームに入室してから送信してください。');
+          return;
+        }
+        btn.classList.add('scale-90', 'opacity-50');
+        try {
+          const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
+          await updateDoc(studentDocRef, {
+            sendAt: new Date().toISOString(),
+            sendType: 'stamp',
+            stamp: emoji,
+            comments: ''
+          });
+          showCustomAlert('スタンプ ' + emoji + ' を送信しました！');
+        } catch (err) {
+          showCustomAlert('送信に失敗しました: ' + err.message);
+        } finally {
+          setTimeout(() => { btn.classList.remove('scale-90', 'opacity-50'); }, 600);
+        }
+      }
+
+      window.sendComment = async function() {
+        if (!currentRoomId || !studentId) {
+          showCustomAlert('ルームに入室してから送信してください。');
+          return;
+        }
+        const input = document.getElementById('comment-input');
+        const text = input.value.trim();
+        if (!text) { showCustomAlert('コメントを入力してください。'); return; }
+        try {
+          const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
+          await updateDoc(studentDocRef, {
+            sendAt: new Date().toISOString(),
+            sendType: 'comment',
+            stamp: '',
+            comments: text
+          });
+          input.value = '';
+          showCustomAlert('コメントを送信しました！');
+        } catch (err) {
+          showCustomAlert('送信に失敗しました: ' + err.message);
+        }
+      };
+
+      // Enter キーでコメント送信
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && document.activeElement?.id === 'comment-input') {
+          window.sendComment();
+        }
+      });
+
+            window.leaveRoom = async function() {
+        resetScreenShareUI();
+        if (currentRoomId && studentId) {
+          try {
+            // ここではドキュメントを削除せず、退室時刻のみ記録する。
+            // 実際の削除は教員がルームを退室するタイミングで一括実施される。
+            const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
+            await updateDoc(studentDocRef, {
+              leftAt: new Date().toISOString(),
+              thumbnailImage: "",
+              fullImage: "",
+              updatedAt: new Date().toISOString()
+            });
+          } catch (err) { console.error("退出時刻の記録に失敗:", err); }
+        }
+        if (auth.currentUser?.isAnonymous) await signOut(auth);
+
+        // 入室フォームに戻す
+        currentRoomId = null;
+        studentId = null;
+        lastAllRequestToken = "";
+        lastSingleRequestToken = "";
+        if (unsubscribeRoom) { unsubscribeRoom(); unsubscribeRoom = null; }
+
+        document.getElementById('student-active-panel').classList.add('hidden');
+        document.getElementById('student-join-panel').classList.remove('hidden');
+        document.getElementById('student-room-input').value = '';
+        document.getElementById('student-name-input').value = '';
+        document.getElementById('student-id-input').value = '';
+
+        // 再度匿名認証して入室フォームへ戻す
+        try {
+          const result = await signInAnonymously(auth);
+          currentUser = result.user;
+          updateAuthBadge(currentUser);
+        } catch (e) { console.error("再認証失敗:", e); }
+        lucide.createIcons();
+      };
+
+      function escapeHTML(str) {
+        if (!str) return '';
+        return str.replace(/[&<>'"]/g, tag => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[tag] || tag));
+      }
+
+      function showCustomAlert(message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = "fixed top-5 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-xl z-50 flex items-center gap-3 border border-slate-700 fade-in max-w-lg w-[90%]";
+        alertDiv.innerHTML = `
+          <div class="flex-grow">
+            <div class="flex items-center gap-2 mb-1">
+              <i data-lucide="alert-circle" class="w-5 h-5 text-teal-400"></i>
+              <span class="font-bold text-sm text-teal-400">システム通知</span>
+            </div>
+            <p class="text-xs font-medium whitespace-pre-wrap leading-relaxed">${escapeHTML(message)}</p>
+          </div>
+          <button onclick="this.parentElement.remove()" class="ml-4 text-xs font-bold text-teal-400 hover:text-teal-300 self-start mt-1">閉じる</button>`;
+        document.body.appendChild(alertDiv);
+        lucide.createIcons();
+        setTimeout(() => { if (alertDiv) alertDiv.remove(); }, 12000);
+      }
+    </script>
+  </body>
+</html>
