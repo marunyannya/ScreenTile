@@ -197,6 +197,17 @@
       let lastSingleRequestToken = "";
       let unsubscribeRoom = null;
 
+      // 入室中に「タブを閉じる／ブラウザを閉じる／リロード／別URLへ移動」しようとした際、
+      // ブラウザ標準の確認ダイアログ（定型文のため文言はカスタマイズ不可）を出す。
+      // 「キャンセル」を選べばそのままページに留まれる。
+      // なお、アプリ内の「退出する」ボタンによる退出はページ遷移を伴わないため、
+      // この警告の対象にはならない（別途、専用の確認モーダルで対応済み）。
+      function handleBeforeUnload(e) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+
       //--- 匿名認証してルーム入室画面へ移行
       try {
         const result = await signInAnonymously(auth);
@@ -263,6 +274,7 @@
           document.getElementById('sharing-status-dot').className = "w-2.5 h-2.5 rounded-full bg-slate-400";
           listenForTeacherRequests();
           initStampButtons();
+          window.addEventListener('beforeunload', handleBeforeUnload);
           lucide.createIcons();
         } catch (error) {
           showCustomAlert("通信エラーにより参加できませんでした。(" + error.message + ")");
@@ -486,6 +498,7 @@
 
       window.leaveRoom = async function() {
         closeLeaveConfirmModal();
+        window.removeEventListener('beforeunload', handleBeforeUnload);
         resetScreenShareUI();
         if (currentRoomId && studentId) {
           try {
