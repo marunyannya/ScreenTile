@@ -110,19 +110,22 @@
             </div>
           </div>
           <div class="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-6 items-start">
-            <div class="min-w-0">
-              <div class="flex justify-between items-center mb-4">
+            <div class="min-w-0 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+              <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
                 <div class="flex items-center gap-2">
-                  <h3 class="text-lg font-bold text-slate-900">接続中の学生</h3>
-                  <span id="student-count" class="bg-sky-100 text-sky-700 text-xs font-bold px-2.5 py-0.5 rounded-full">0人</span>
+                  <i data-lucide="users-round" class="w-4 h-4 text-sky-600"></i>
+                  <h3 class="text-sm font-bold text-slate-900">接続中の学生</h3>
+                  <span id="student-count" class="bg-sky-100 text-sky-700 text-xs font-bold px-2 py-0.5 rounded-full">0人</span>
                 </div>
               </div>
-              <div id="tiles-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                <div id="no-students" class="col-span-full bg-white border border-slate-200 border-dashed rounded-2xl p-12 text-center text-slate-500">
-                  <div class="mx-auto w-16 h-16 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center mb-4">
-                    <i data-lucide="users-round" class="w-8 h-8"></i>
+              <div class="p-4">
+                <div id="tiles-grid" class="grid gap-4 grid-cols-[repeat(auto-fill,minmax(min(240px,100%),240px))]">
+                  <div id="no-students" class="col-span-full bg-slate-50 border border-slate-200 border-dashed rounded-2xl p-12 text-center text-slate-500">
+                    <div class="mx-auto w-16 h-16 bg-white text-slate-400 rounded-full flex items-center justify-center mb-4">
+                      <i data-lucide="users-round" class="w-8 h-8"></i>
+                    </div>
+                    <p class="font-medium text-slate-700">学生の接続を待っています...</p>
                   </div>
-                  <p class="font-medium text-slate-700">学生の接続を待っています...</p>
                 </div>
               </div>
             </div>
@@ -135,9 +138,6 @@
                   <h3 class="text-sm font-bold text-slate-900">コメント受信</h3>
                   <span id="comment-count" class="bg-sky-100 text-sky-700 text-xs font-bold px-2 py-0.5 rounded-full">0件</span>
                 </div>
-                <button onclick="clearComments()" class="text-xs text-slate-400 hover:text-red-500 hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition flex items-center gap-1">
-                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>クリア
-                </button>
               </div>
               <div id="comments-list" class="divide-y divide-slate-100 max-h-[36rem] overflow-y-auto">
                 <div id="no-comments" class="p-8 text-center text-slate-400 text-sm">
@@ -900,20 +900,23 @@
         countBadge.innerText = commentCount + '件';
 
         const timeStr = sendAt ? new Date(sendAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) : '--:--';
-        const displayName = studentNumber ? name + '(' + studentNumber + ')' : name;
 
-        // 出席確認向けの全履歴（「クリア」を押しても消えない）
+        // 出席確認向けの全履歴（学籍番号はここに保持し、出席確認ダウンロード時にのみ使う）
         const commentId = ++commentIdSeq;
         allComments.push({ id: commentId, name, studentNumber, text, sendAt, checked: false });
 
         const item = document.createElement('div');
-        item.className = 'comment-item px-3 py-2 flex items-center gap-2 hover:bg-slate-50 transition fade-in text-sm';
+        item.className = 'comment-item px-3 py-2.5 flex items-start gap-2 hover:bg-slate-50 transition fade-in text-sm';
         item.dataset.commentId = String(commentId);
         item.innerHTML =
-          '<input type="checkbox" onchange="toggleCommentChecked(' + commentId + ', this.checked)" class="w-4 h-4 shrink-0 rounded border-slate-300 text-sky-600 focus:ring-sky-500" title="確認済みにする">' +
-          '<span class="text-[10px] text-slate-400 shrink-0 tabular-nums">' + timeStr + '</span>' +
-          '<span class="font-bold text-slate-800 shrink-0 max-w-[6rem] truncate">' + escapeHTML(displayName) + '</span>' +
-          '<span class="text-slate-700 truncate min-w-0" title="' + escapeHTML(text) + '">' + escapeHTML(text) + '</span>';
+          '<input type="checkbox" onchange="toggleCommentChecked(' + commentId + ', this.checked)" class="w-4 h-4 shrink-0 mt-0.5 rounded border-slate-300 text-sky-600 focus:ring-sky-500" title="確認済みにする">' +
+          '<div class="min-w-0 flex-grow">' +
+            '<div class="flex items-baseline gap-2">' +
+              '<span class="text-[10px] text-slate-400 shrink-0 tabular-nums">' + timeStr + '</span>' +
+              '<span class="font-bold text-slate-800 text-xs shrink-0">' + escapeHTML(name) + '</span>' +
+            '</div>' +
+            '<p class="text-slate-700 whitespace-pre-wrap break-words">' + escapeHTML(text) + '</p>' +
+          '</div>';
         // 先頭に挿入（新しい順）
         list.insertBefore(item, list.firstChild);
         lucide.createIcons();
@@ -922,17 +925,6 @@
       window.toggleCommentChecked = function(commentId, checked) {
         const entry = allComments.find(c => c.id === commentId);
         if (entry) entry.checked = checked;
-      };
-
-      window.clearComments = function() {
-        // 画面表示のみをクリアする。出席確認用の記録（allComments）は消さずに残す。
-        const list = document.getElementById('comments-list');
-        const noComments = document.getElementById('no-comments');
-        const countBadge = document.getElementById('comment-count');
-        list.querySelectorAll('.comment-item').forEach(el => el.remove());
-        noComments.classList.remove('hidden');
-        commentCount = 0;
-        countBadge.innerText = '0件';
       };
 
       window.leaveRoomTeacher = async function() {
