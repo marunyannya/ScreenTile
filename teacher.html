@@ -259,6 +259,17 @@
       let currentUser = null;
       let currentRoomId = null;
 
+      // ルーム運用中に「タブを閉じる／ブラウザを閉じる／リロード／別URLへ移動」しようとした際、
+      // ブラウザ標準の確認ダイアログ（文言はカスタマイズ不可）を出す。
+      // 「キャンセル」を選べばそのままページに留まれる。
+      // アプリ内の「退出する」操作（leaveRoomTeacher）による退出はページ遷移を伴わないが、
+      // その後 location.reload() を呼ぶため、退出処理の中で明示的に警告を解除しておく。
+      function handleBeforeUnload(e) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+
       //--- 匿名認証してルーム作成画面へ移行
       try {
         const result = await signInAnonymously(auth);
@@ -333,6 +344,7 @@
           document.getElementById('teacher-view').classList.remove('hidden');
           startListeningToRoom(currentRoomId);
           startListeningToStudents(currentRoomId);
+          window.addEventListener('beforeunload', handleBeforeUnload);
           lucide.createIcons();
 
         } catch (err) {
@@ -900,6 +912,7 @@
       };
 
       window.leaveRoomTeacher = async function() {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
         if (relativeTimeTimer) { clearInterval(relativeTimeTimer); relativeTimeTimer = null; }
         if (currentRoomId) {
           // 1. まずこのルームに紐づく学生ドキュメントを一括削除
