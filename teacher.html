@@ -109,39 +109,41 @@
               </button>
             </div>
           </div>
-          <div>
-            <div class="flex justify-between items-center mb-4">
-              <div class="flex items-center gap-2">
-                <h3 class="text-lg font-bold text-slate-900">接続中の学生</h3>
-                <span id="student-count" class="bg-sky-100 text-sky-700 text-xs font-bold px-2.5 py-0.5 rounded-full">0人</span>
-              </div>
-            </div>
-            <div id="tiles-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              <div id="no-students" class="col-span-full bg-white border border-slate-200 border-dashed rounded-2xl p-12 text-center text-slate-500">
-                <div class="mx-auto w-16 h-16 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center mb-4">
-                  <i data-lucide="users-round" class="w-8 h-8"></i>
+          <div class="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-6 items-start">
+            <div class="min-w-0">
+              <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-2">
+                  <h3 class="text-lg font-bold text-slate-900">接続中の学生</h3>
+                  <span id="student-count" class="bg-sky-100 text-sky-700 text-xs font-bold px-2.5 py-0.5 rounded-full">0人</span>
                 </div>
-                <p class="font-medium text-slate-700">学生の接続を待っています...</p>
+              </div>
+              <div id="tiles-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div id="no-students" class="col-span-full bg-white border border-slate-200 border-dashed rounded-2xl p-12 text-center text-slate-500">
+                  <div class="mx-auto w-16 h-16 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center mb-4">
+                    <i data-lucide="users-round" class="w-8 h-8"></i>
+                  </div>
+                  <p class="font-medium text-slate-700">学生の接続を待っています...</p>
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- コメントパネル -->
-          <div class="mt-8 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-            <div class="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-              <div class="flex items-center gap-2">
-                <i data-lucide="message-square" class="w-5 h-5 text-sky-600"></i>
-                <h3 class="text-base font-bold text-slate-900">コメント受信</h3>
-                <span id="comment-count" class="bg-sky-100 text-sky-700 text-xs font-bold px-2.5 py-0.5 rounded-full">0件</span>
+            <!-- コメントパネル -->
+            <div class="min-w-0 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+              <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="message-square" class="w-4 h-4 text-sky-600"></i>
+                  <h3 class="text-sm font-bold text-slate-900">コメント受信</h3>
+                  <span id="comment-count" class="bg-sky-100 text-sky-700 text-xs font-bold px-2 py-0.5 rounded-full">0件</span>
+                </div>
+                <button onclick="clearComments()" class="text-xs text-slate-400 hover:text-red-500 hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition flex items-center gap-1">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>クリア
+                </button>
               </div>
-              <button onclick="clearComments()" class="text-xs text-slate-400 hover:text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
-                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>クリア
-              </button>
-            </div>
-            <div id="comments-list" class="divide-y divide-slate-100 max-h-80 overflow-y-auto">
-              <div id="no-comments" class="p-8 text-center text-slate-400 text-sm">
-                <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2 text-slate-300"></i>
-                <p>まだコメントがありません</p>
+              <div id="comments-list" class="divide-y divide-slate-100 max-h-[36rem] overflow-y-auto">
+                <div id="no-comments" class="p-8 text-center text-slate-400 text-sm">
+                  <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2 text-slate-300"></i>
+                  <p>まだコメントがありません</p>
+                </div>
               </div>
             </div>
           </div>
@@ -621,7 +623,20 @@
             const joinedStr = fmtTime(s.joinedAt);
             const leftStr = s.leftAt ? fmtTime(s.leftAt) : '在室中';
             return `${String(i + 1).padStart(3, ' ')}. ${num}　${s.name}　入室:${joinedStr}　退室:${leftStr}`;
-          })
+          }),
+          '',
+          `--- コメント履歴（${allComments.length}件）---`,
+          ...(allComments.length === 0
+            ? ['（コメントはありませんでした）']
+            : [...allComments]
+                .sort((a, b) => (a.sendAt || '').localeCompare(b.sendAt || ''))
+                .map((c) => {
+                  const num = c.studentNumber ? c.studentNumber : '（学籍番号なし）';
+                  const t = fmtTime(c.sendAt);
+                  const mark = c.checked ? '[確認済]' : '[未確認]';
+                  return `${mark} ${t}　${num}　${c.name}　${c.text}`;
+                })
+          )
         ];
         const text = lines.join('\n');
 
@@ -838,6 +853,10 @@
       //--- スタンプ・コメント受信機能
       // コメントはDOM側に蓄積（Firestoreには保存しない）
       let commentCount = 0;
+      let commentIdSeq = 0;
+      // 出席確認用に、画面表示（クリア操作）とは切り離してコメント全履歴をブラウザ内に保持する。
+      // ※ Firestoreには保存されないため、教員のブラウザが完全に閉じられると消える点に注意。
+      const allComments = [];
       // 学生ごとに最後に処理したsendAtを記憶（重複受信防止）
       const lastHandledSendAt = {};
 
@@ -880,28 +899,33 @@
         commentCount++;
         countBadge.innerText = commentCount + '件';
 
-        const timeStr = sendAt ? new Date(sendAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--';
-        const displayName = studentNumber ? name + ' (' + studentNumber + ')' : name;
+        const timeStr = sendAt ? new Date(sendAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+        const displayName = studentNumber ? name + '(' + studentNumber + ')' : name;
+
+        // 出席確認向けの全履歴（「クリア」を押しても消えない）
+        const commentId = ++commentIdSeq;
+        allComments.push({ id: commentId, name, studentNumber, text, sendAt, checked: false });
 
         const item = document.createElement('div');
-        item.className = 'comment-item px-4 py-3 flex items-start gap-3 hover:bg-slate-50 transition fade-in';
+        item.className = 'comment-item px-3 py-2 flex items-center gap-2 hover:bg-slate-50 transition fade-in text-sm';
+        item.dataset.commentId = String(commentId);
         item.innerHTML =
-          '<div class="w-8 h-8 rounded-full bg-sky-100 flex items-center justify-center shrink-0 mt-0.5">' +
-            '<i data-lucide="message-circle" class="w-4 h-4 text-sky-600"></i>' +
-          '</div>' +
-          '<div class="flex-grow min-w-0">' +
-            '<div class="flex items-baseline gap-2 flex-wrap">' +
-              '<span class="font-bold text-sm text-slate-800">' + escapeHTML(displayName) + '</span>' +
-              '<span class="text-[10px] text-slate-400">' + timeStr + '</span>' +
-            '</div>' +
-            '<p class="text-sm text-slate-700 mt-0.5 break-words">' + escapeHTML(text) + '</p>' +
-          '</div>';
+          '<input type="checkbox" onchange="toggleCommentChecked(' + commentId + ', this.checked)" class="w-4 h-4 shrink-0 rounded border-slate-300 text-sky-600 focus:ring-sky-500" title="確認済みにする">' +
+          '<span class="text-[10px] text-slate-400 shrink-0 tabular-nums">' + timeStr + '</span>' +
+          '<span class="font-bold text-slate-800 shrink-0 max-w-[6rem] truncate">' + escapeHTML(displayName) + '</span>' +
+          '<span class="text-slate-700 truncate min-w-0" title="' + escapeHTML(text) + '">' + escapeHTML(text) + '</span>';
         // 先頭に挿入（新しい順）
         list.insertBefore(item, list.firstChild);
         lucide.createIcons();
       }
 
+      window.toggleCommentChecked = function(commentId, checked) {
+        const entry = allComments.find(c => c.id === commentId);
+        if (entry) entry.checked = checked;
+      };
+
       window.clearComments = function() {
+        // 画面表示のみをクリアする。出席確認用の記録（allComments）は消さずに残す。
         const list = document.getElementById('comments-list');
         const noComments = document.getElementById('no-comments');
         const countBadge = document.getElementById('comment-count');
