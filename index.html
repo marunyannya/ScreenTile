@@ -418,17 +418,25 @@
         { emoji: '🆖', label: 'NG'},
       ];
 
+      // スタンプ連打によるFirestore書き込みの増加を防ぐためのクールダウン設定。
+      // 1回送信すると、全スタンプボタンがこの時間だけ押せなくなる（コメント送信は対象外）。
+      const STAMP_COOLDOWN_MS = 5000;
+      let stampButtons = [];
+      let stampCooldownTimer = null;
+
       function initStampButtons() {
         const container = document.getElementById('stamp-buttons');
         if (!container) return;
         container.innerHTML = '';
+        stampButtons = [];
         STAMPS.forEach(stamp => {
           const btn = document.createElement('button');
-          btn.className = 'w-12 h-12 flex items-center justify-center bg-slate-50 hover:bg-teal-50 border border-slate-200 hover:border-teal-300 rounded-xl text-2xl transition active:scale-90 shrink-0';
+          btn.className = 'w-12 h-12 flex items-center justify-center bg-slate-50 hover:bg-teal-50 border border-slate-200 hover:border-teal-300 rounded-xl text-2xl transition active:scale-90 shrink-0 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-slate-50 disabled:hover:border-slate-200 disabled:active:scale-100';
           btn.title = stamp.label;
           btn.textContent = stamp.emoji;
           btn.onclick = () => sendStamp(stamp.emoji, btn);
           container.appendChild(btn);
+          stampButtons.push(btn);
         });
       }
 
@@ -437,7 +445,12 @@
           showCustomAlert('ルームに入室してから送信してください。');
           return;
         }
+        // クールダウン中はボタンがdisabledになっているはずだが、念のため二重に防止
+        if (stampButtons.some(b => b.disabled)) return;
+
         btn.classList.add('scale-90', 'opacity-50');
+        // 送信直後に全スタンプボタンを一定時間押せなくする（連打対策）
+        stampButtons.forEach(b => b.disabled = true);
         try {
           const studentDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'students', studentId);
           await updateDoc(studentDocRef, {
@@ -451,6 +464,10 @@
           showCustomAlert('送信に失敗しました: ' + err.message);
         } finally {
           setTimeout(() => { btn.classList.remove('scale-90', 'opacity-50'); }, 600);
+          if (stampCooldownTimer) clearTimeout(stampCooldownTimer);
+          stampCooldownTimer = setTimeout(() => {
+            stampButtons.forEach(b => b.disabled = false);
+          }, STAMP_COOLDOWN_MS);
         }
       }
 
